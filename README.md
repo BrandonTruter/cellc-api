@@ -23,28 +23,22 @@ Things you may want to cover:
 
 * ...
 
+# STEPS:
 
-# REPO
-  - git clone git@bitbucket.org:brandonleetruter/tenbew_doi_api.git
-
-# SERVER
-  - http://localhost:3000
-
-
-# setup project
+## setup project
 
   $ rails new tenbew_doi_api --api
   $ cd tenbew_doi_api
   $ bundle install
   $ bin/rake db:setup
 
-# setup repo
+## setup repo
 
   $ git remote add origin git@bitbucket.org:brandonleetruter/tenbew_doi_api.git
   $ git push -u origin master
   $ git add --all && git commit -a -m "initial commit, created new rails project with --api flag"
 
-# setup testing
+## setup testing
 
   - gem rspec-rails, factory_girl_rails
   $ bundle
@@ -52,21 +46,21 @@ Things you may want to cover:
   $ rm -rf test
   $ git add --all && git commit -a -m "added rspec testing framework"
 
-# setup database
+## setup database
 
   $ bin/rails g scaffold subscription state service msisdn message reference
   $ bin/rake db:migrate
   $ bin/rails s
   $ git add --all && git commit -a -m "added subscription scaffold, includes migration, controllers, model"
 
-# setup DOI config
+## setup DOI config
 
   - initializers: qq.rb, cellc.rb
   - yaml configs: qq.yml, cellc.yml
   - added DOI related logic in controller
   $ git add --all && git commit -a -m "added qq and cellc configs, updated controller with DOI related logic"
 
-# setup serializers
+## setup serializers
 
   - gem active_model_serializers
   $ bundle
@@ -74,51 +68,10 @@ Things you may want to cover:
   - update SubscriptionSerializer file
   $ git add --all && git commit -a -m "added subscription serializer"
 
+## setup versioning
 
-# 
-
-  -
-  $
-  -
-  $
-
-
-
-# enable cors
-
-  - gem 'rack-cors'
-  $ bundle
-  - config/application.rb:
-
-  module YourApp
-    class Application < Rails::Application
-
-      # ...
-
-      config.middleware.insert_before 0, "Rack::Cors" do
-        allow do
-          origins '*'
-          resource '*', :headers => :any, :methods => [:get, :post, :options]
-        end
-      end
-
-    end
-  end
-
-  https://github.com/cyu/rack-cors
-
-
-#
-
-  -
-  $
-  -
-  $
-
-
-
-TODO
-
-- routing
-- response (to gw)
-- request (to doi)
+  - create 'api/v1' directory with x2 new controllers:
+    -> api_controller.rb
+    -> subscriptions_controller.rb
+  - update routes.rb with namespace
+  $ git add --all && git commit -a -m "added versioning, accessed through /api/v1/ namespace"
