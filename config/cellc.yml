@@ -1,0 +1,31 @@
+development:
+  port: 8081
+  user: tenbew
+  pass: tenbew678
+  ip: 41.156.64.242
+  url: http://41.156.64.242:8081/WaspInterface
+  callback_url: https://asgard-mocha.net/cellc_cb1
+
+test:
+  port: 8081
+  user: tenbew
+  pass: tenbew678
+  ip: 41.156.64.242
+  url: http://41.156.64.242:8081/WaspInterface
+  callback_url: https://asgard-mocha.net/cellc_cb1
+
+staging:
+  port: 8081
+  user: tenbew
+  pass: tenbew678
+  ip: 41.156.64.242
+  url: http://41.156.64.242:8081/WaspInterface
+  callback_url: https://asgard-mocha.net/cellc_cb1
+
+production:
+  port: 8081
+  user: tenbew
+  pass: tenbew678
+  ip: 41.156.64.242
+  url: http://41.156.64.242:8081/WaspInterface
+  callback_url: https://asgard-mocha.net/cellc_cb1

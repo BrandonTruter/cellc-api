@@ -1,0 +1,27 @@
+development:
+  port: 22
+  ip: 156.38.208.218
+  waspTID: QQChina
+  serviceID: '00'
+  MN: CellC_ZA
+  
+test:
+  port: 22
+  ip: 156.38.208.218
+  waspTID: QQChina
+  serviceID: 00
+  MN: CellC_ZA
+
+production:
+  port: 22
+  ip: 156.38.208.218
+  waspTID: QQChina
+  serviceID: 00
+  MN: CellC_ZA
+
+staging:
+  port: 22
+  ip: 156.38.208.218
+  waspTID: QQChina
+  serviceID: '00'
+  MN: CellC_ZA
