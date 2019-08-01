@@ -46,10 +46,9 @@ group :development do
   gem 'spring-watcher-listen', '~> 2.0.0'
 end
 
-
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
-# gem 'savon', '2.12.0'  # , '~> 2.11.2'
-# gem 'savon-multipart', '2.1.1'
 gem 'savon', '~> 2.12.0'
+
+gem 'active_model_serializers'

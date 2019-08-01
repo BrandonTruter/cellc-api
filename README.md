@@ -25,43 +25,100 @@ Things you may want to cover:
 
 
 # REPO
-  git clone git@bitbucket.org:brandonleetruter/tenbew_doi_api.git
+  - git clone git@bitbucket.org:brandonleetruter/tenbew_doi_api.git
+
+# SERVER
+  - http://localhost:3000
+
+
+# setup project
+
+  $ rails new tenbew_doi_api --api
+  $ cd tenbew_doi_api
+  $ bundle install
+  $ bin/rake db:setup
+
+# setup repo
+
+  $ git remote add origin git@bitbucket.org:brandonleetruter/tenbew_doi_api.git
+  $ git push -u origin master
+  $ git add --all && git commit -a -m "initial commit, created new rails project with --api flag"
+
+# setup testing
+
+  - gem rspec-rails, factory_girl_rails
+  $ bundle
+  $ bin/rails g rspec:install
+  $ rm -rf test
+  $ git add --all && git commit -a -m "added rspec testing framework"
+
+# setup database
+
+  $ bin/rails g scaffold subscription state service msisdn message reference
+  $ bin/rake db:migrate
+  $ bin/rails s
+  $ git add --all && git commit -a -m "added subscription scaffold, includes migration, controllers, model"
+
+# setup DOI config
+
+  - initializers: qq.rb, cellc.rb
+  - yaml configs: qq.yml, cellc.yml
+  - added DOI related logic in controller
+  $ git add --all && git commit -a -m "added qq and cellc configs, updated controller with DOI related logic"
+
+# setup serializers
+
+  - gem active_model_serializers
+  $ bundle
+  $ rails g serializer subscription
+  - update SubscriptionSerializer file
+  $ git add --all && git commit -a -m "added subscription serializer"
+
+
+# 
+
+  -
+  $
+  -
+  $
 
 
 
-- setup project
+# enable cors
 
-rails new tenbew_doi_api --api
-cd tenbew_doi_api
-bundle install
-bin/rake db:setup
+  - gem 'rack-cors'
+  $ bundle
+  - config/application.rb:
 
-- setup repo
+  module YourApp
+    class Application < Rails::Application
 
-git remote add origin git@bitbucket.org:brandonleetruter/tenbew_doi_api.git
-git push -u origin master
-git add --all && git commit -a -m "initial commit, created new rails project with --api flag"
+      # ...
 
-- setup testing
+      config.middleware.insert_before 0, "Rack::Cors" do
+        allow do
+          origins '*'
+          resource '*', :headers => :any, :methods => [:get, :post, :options]
+        end
+      end
 
-bundle
-bin/rails g rspec:install
-rm -rf test
-git add --all && git commit -a -m "added rspec testing framework"
+    end
+  end
 
-- setup database
-
-bin/rails g scaffold subscription state service msisdn message reference
-bin/rake db:migrate
-bin/rails s
-git add --all && git commit -a -m "added subscription scaffold, includes migration, controllers, model"
-# http://localhost:3000
-
--
+  https://github.com/cyu/rack-cors
 
 
 #
 
+  -
+  $
+  -
+  $
 
 
--
+
+TODO
+
+- routing
+- response (to gw)
+- request (to doi)
