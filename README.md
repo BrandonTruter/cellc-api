@@ -10,8 +10,7 @@ Exposes an API with functionality to:
 
 * Initialization and instructions for:
 
-  ● Configuration, Database, Development, Deployment, Tests, etc
-
+  - Configuration, Database, Development, Deployment, Tests, etc
 
 ## Getting Started
 
@@ -24,7 +23,7 @@ Exposes an API with functionality to:
 ### Development
 
   * Clone the project with `git clone git@bitbucket.org:brandonleetruter/tenbew_doi_api.git`
-  * Install bundler `gem install bundler` and install gems with `bundle install`
+  * Install bundler `gem install bundler`, move to app `cd tenbew_doi_api` and install gems `bundle install`
   * Create and migrate database with `bin/rake db:setup`
   * Start Server with `bin/rails s`
 
@@ -98,66 +97,67 @@ Exposes an API with functionality to:
 
 ### REST API Endpoints
 
-  - `POST` /subscriptions
+- `POST` /subscriptions
 
-    ```bash
-    $ curl --request POST \
-       --url 'http://localhost:3000/api/v1/subscriptions' \
-       --header 'Content-Type: application/json; charset=utf-8' \
-       --data $'{ "msisdn": "27124247232", "state": "active", "message": "first subscription", "service": "none", "reference": "test" }'
-    ```
+```bash
+$ curl --request POST \
+   --url 'http://localhost:3000/api/v1/subscriptions' \
+   --header 'Content-Type: application/json; charset=utf-8' \
+   --data $'{ "msisdn": "27124247232", "state": "active", "message": "first subscription", "service": "none", "reference": "test" }'
+```
+Response:
+```
+  {
+    "id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"
+  }
+```
 
-    ```
-      {
-        "id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"
-      }
-    ```
+- `GET` /subscriptions
 
-  - `GET` /subscriptions
+```bash
+$ curl --request GET \
+     --url 'http://localhost:3000/api/v1/subscriptions' \
+     --header 'Content-Type: application/json'
+```
+Response:
+```
+  [{"id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"}]
+```
 
-    ```bash
-    $ curl --request GET \
-         --url 'http://localhost:3000/api/v1/subscriptions' \
-         --header 'Content-Type: application/json'
-    ```
+- `GET` /subscriptions/:id
 
-    ```
-      [{"id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"}]
-    ```
-
-  - `GET` /subscriptions/:id
-
-    ```bash
-    $ curl --request GET \
-         --url 'http://localhost:3000/api/v1/subscriptions/1' \
-         --header 'Content-Type: application/json'
-    ```
-
-    ```
-      {
-        "id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"
-      }
-    ```   
+```bash
+$ curl --request GET \
+     --url 'http://localhost:3000/api/v1/subscriptions/1' \
+     --header 'Content-Type: application/json'
+```
+Response:
+```
+  {
+    "id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"
+  }
+```   
 
 ### Authorization
 
-  - `Fail` (without token)
+- `Fail` (without token)
 
-  ```bash
-  $ curl --request GET \
-         --url 'http://localhost:3000/api/v1/subscriptions' \
-         --header 'Content-Type: application/json'
-  ```
-  ```
-    Bad credentials
-  ```
+```bash
+$ curl --request GET \
+       --url 'http://localhost:3000/api/v1/subscriptions' \
+       --header 'Content-Type: application/json'
+```
+Response:
+```
+  Bad credentials
+```
 
-  - `Pass` (with token)
+- `Pass` (with token)
 
-  ```bash
-  $ curl -H "Authorization: Token token=PsmmvKBqQDOaWwEsPpOCYMsy" http://localhost:3000/subscriptions
-  ```
-
-  ```
-  [{"id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"}]
-  ```
+```bash
+$ curl -H "Authorization: Token token=PsmmvKBqQDOaWwEsPpOCYMsy" http://localhost:3000/subscriptions
+```
+Response:
+```
+[{"id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"}]
+```
