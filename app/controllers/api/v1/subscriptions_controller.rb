@@ -2,17 +2,17 @@ module Api::V1
   class SubscriptionsController < ApiController
     before_action :set_subscription, only: [:show, :update, :destroy]
 
-    # GET /v1/subscriptions
+    # GET /api/v1/subscriptions
     def index
       render json: Subscription.all
     end
 
-    # GET /v1/subscriptions/1
+    # GET /api/v1/subscriptions/1
     def show
       render json: @subscription
     end
 
-    # POST /v1/subscriptions
+    # POST /api/v1/subscriptions
     def create
       @subscription = Subscription.new(subscription_params)
 
@@ -23,7 +23,7 @@ module Api::V1
       end
     end
 
-    # PATCH/PUT /v1/subscriptions/1
+    # PATCH/PUT /api/v1/subscriptions/1
     def update
       if @subscription.update(subscription_params)
         render json: @subscription
@@ -32,7 +32,7 @@ module Api::V1
       end
     end
 
-    # DELETE /v1/subscriptions/1
+    # DELETE /api/v1/subscriptions/1
     def destroy
       @subscription.destroy
     end
