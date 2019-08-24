@@ -8,10 +8,6 @@ Exposes an API with functionality to:
 
 * Handle / return downstream logic back to GATEWAY
 
-* Initialization and instructions for:
-
-  - Configuration, Database, Development, Deployment, Tests, etc
-
 ## Getting Started
 
 ### Dependencies
@@ -29,7 +25,7 @@ Exposes an API with functionality to:
 
   Now we can response to API requests on [`localhost:3000`](http://localhost:3000)
 
-## SETUP
+## Setup
 
 ### Project
 
@@ -91,13 +87,11 @@ Exposes an API with functionality to:
   * $ git add --all && git commit -a -m "added authentication, authorised by token in header"
 
 
-## TESTING:
+## API Usage
 
-**todo** : update rspec tests
+### Endpoints
 
-### REST API Endpoints
-
-- `POST` /subscriptions
+**POST** /subscriptions
 
 ```bash
 $ curl --request POST \
@@ -112,7 +106,7 @@ Response:
   }
 ```
 
-- `GET` /subscriptions
+**GET** /subscriptions
 
 ```bash
 $ curl --request GET \
@@ -124,7 +118,7 @@ Response:
   [{"id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"}]
 ```
 
-- `GET` /subscriptions/:id
+**GET** /subscriptions/:id
 
 ```bash
 $ curl --request GET \
@@ -140,7 +134,7 @@ Response:
 
 ### Authorization
 
-- `Fail` (without token)
+**Fail** (without token)
 
 ```bash
 $ curl --request GET \
@@ -152,7 +146,7 @@ Response:
   Bad credentials
 ```
 
-- `Pass` (with token)
+**Pass** (with token)
 
 ```bash
 $ curl -H "Authorization: Token token=PsmmvKBqQDOaWwEsPpOCYMsy" http://localhost:3000/subscriptions
@@ -161,3 +155,7 @@ Response:
 ```
 [{"id":1,"state":"active","service":"none","msisdn":"27124247232","message":"first subscription","reference":"test"}]
 ```
+
+## TESTING:
+
+**todo** : update rspec tests
