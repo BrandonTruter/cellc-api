@@ -57,5 +57,3 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 gem 'savon', '~> 2.12.0'
 
 gem 'active_model_serializers'
-
-gem 'irbtools', require: 'irbtools/binding'
