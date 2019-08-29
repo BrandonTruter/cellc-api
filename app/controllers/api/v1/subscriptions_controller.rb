@@ -55,13 +55,84 @@ module Api::V1
     USER = "tenbew"
 
     def add_sub
-      cellc_client.call(:add_subscription) do
+      logger.info "Api::V1::SubscriptionsController.add_sub"
+
+      message = {
+        :msisdn => "27842333777",
+        :serviceName => "Banking",
+        :contentProvider => "ABSA",
+        :chargeCode => "DOI005",
+        :chargeInterval => "WEEKLY",
+        :contentType => "OTHER",
+        :bearerType => "WEB",
+        :waspReference => "CellC_ZA",
+        :waspTid => "QQChina"
+      }
+
+      response = cellc_client.call(:add_subscription) do
         soap_header "wasp:ServiceAuth" => {
                         "Username" => USER,
                         "Password" => PASS
                       }
-        message doi_message
+        message message
       end
+
+      logger.info "RESP: #{response}"
+
+      render :json => response.to_json
+    end
+
+    def charge_sub
+      logger.info "Api::V1::SubscriptionsController.charge_sub"
+
+      client = Savon.client(
+        wsdl: WSDL,
+        endpoint: ENDP,
+        namespace: DOI_NAMESPACE,
+        namespaces: DOI_NAMESPACES,
+        namespace_identifier: :tns,
+        wsse_auth: [USER, PASS],
+        env_namespace: :soapenv,
+        ssl_verify_mode: :none,
+        pretty_print_xml: true,
+        raise_errors: false,
+        log_level: :debug,
+        log: true
+      )
+
+      charge_message = {
+        :msisdn => "27842333777",
+        :waspTid => "QQChina",
+        :serviceID => "00"
+      }
+
+      response = client.call(:charge_subscriber) do
+        soap_header "wasp:ServiceAuth" => {
+                        "Username" => "#{USER}",
+                        "Password" => "#{PASS}"
+                      }
+        message charge_message
+      end
+
+      logger.info "RESP: #{response}"
+
+      render :json => subscriber.to_json
+    end
+
+    def cancel_sub
+      logger.info "Api::V1::SubscriptionsController.cancel_sub"
+
+      message = {
+        :msisdn => "27842333777",
+        :waspTID => "QQChina",
+        :serviceID => "00"
+      }
+
+      response = doi_client.call(:cancel_subscription, :message => message)
+
+      logger.info "RESPONSE: #{response}"
+
+      render :json => response.to_json
     end
 
     def cellc_client
@@ -81,6 +152,7 @@ module Api::V1
     end
 
     def cellc_headers
+      ts = generate_timestamp()
       {
         "wsse:Security" => {
           "@soapenv:mustUnderstand" => "1",
@@ -88,8 +160,8 @@ module Api::V1
           "@xmlns:wsu" => WSU_NAMESPACE,
           "wsse:UsernameToken" => {
             "@wsu:Id" => "UsernameToken-124",
-            "wsse:Nonce"  => generate_nonce(),
-            "wsu:Created" => generate_timestamp(),
+            "wsse:Nonce"  => generate_nonce(ts),
+            "wsu:Created" => ts,
             "wsse:Username"  => USER,
             "wsse:Password"  => PASS,
             :attributes! => {
@@ -106,21 +178,11 @@ module Api::V1
     end
 
     def generate_nonce(ts)
-      Digest::SHA1.hexdigest random_string + generate_timestamp()
+      Digest::SHA1.hexdigest random_string + ts
     end
 
     def random_string
       (0...100).map { ("a".."z").to_a[rand(26)] }.join
-    end
-
-  private
-
-    def set_subscription
-      @subscription = Subscription.find(params[:id])
-    end
-
-    def subscription_params
-      params.require(:subscription).permit(:state, :service, :msisdn, :message, :reference)
     end
 
     # DOI Configuration
@@ -147,6 +209,17 @@ module Api::V1
       }
     end
 
+    def subscriber
+      {
+        :subscriber => {
+          :mn => "CellC_ZA",
+          :serviceID => "00",
+          :waspTID => "QQChina",
+          :msisdn => "0873248237"
+        }
+      }
+    end
+
     def doi_message
       {
         :msisdn => "27841234567",
@@ -163,14 +236,14 @@ module Api::V1
 
     def doi_client
       Savon.client(
-        wsdl: "http://41.156.64.242:8081/WaspInterface?wsdl",
-        namespace: "http://wasp.doi.soap.protocol.cellc.co.za",
-        endpoint: "http://41.156.64.242:8081/WaspInterface",
+        wsdl: "#{WSDL}",
+        namespace: DOI_NAMESPACE,
         namespaces: doi_namespaces,
-        wsse_auth: ["tenbew", "tenbew678"],
+        wsse_auth: ["tenbew", "tenbew678", :digest],
         ssl_verify_mode: :none, ssl_version: :TLSv1,
-        env_namespace: :soapenv, strip_namespaces: false,
-        convert_request_keys_to: :none, pretty_print_xml: true
+        namespace_identifier: :wasp, env_namespace: :soapenv,
+        open_timeout: 300, read_timeout: 300, log: true, log_level: :debug,
+        convert_request_keys_to: :none, strip_namespaces: false, pretty_print_xml: true
       )
     end
 
@@ -187,6 +260,16 @@ module Api::V1
        "xmlns:wsse" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd",
        "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
      }
+    end
+
+  private
+
+    def set_subscription
+      @subscription = Subscription.find(params[:id])
+    end
+
+    def subscription_params
+      params.require(:subscription).permit(:state, :service, :msisdn, :message, :reference)
     end
 
   end
