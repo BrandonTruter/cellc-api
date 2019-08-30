@@ -48,7 +48,7 @@ module Api::V1
       "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
       "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
     }
-    TIMESTAMP = "2019-08-23T12:20:25.061Z" # JUST FOR TESTING
+    TIMESTAMP = "2019-08-13T12:10:15.061Z" # JUST FOR TESTING
     WSDL = "http://41.156.64.242:8081/WaspInterface?wsdl"
     ENDP = "http://41.156.64.242:8081/WaspInterface"
     PASS = "tenbew678"
@@ -96,13 +96,14 @@ module Api::V1
         ssl_verify_mode: :none,
         pretty_print_xml: true,
         raise_errors: false,
+        logger: Rails.logger,
         log_level: :debug,
         log: true
       )
 
       charge_message = {
         :msisdn => "27842333777",
-        :waspTid => "QQChina",
+        :waspTID => "QQChina",
         :serviceID => "00"
       }
 
@@ -116,7 +117,7 @@ module Api::V1
 
       logger.info "RESP: #{response}"
 
-      render :json => subscriber.to_json
+      render :json => response.to_json
     end
 
     def cancel_sub
@@ -128,7 +129,25 @@ module Api::V1
         :serviceID => "00"
       }
 
-      response = doi_client.call(:cancel_subscription, :message => message)
+      client = Savon.client(
+        wsdl: "#{WSDL}",
+        namespace: DOI_NAMESPACE,
+        namespaces: doi_namespaces,
+        wsse_auth: ["tenbew", "tenbew678", :digest],
+        convert_request_keys_to: :none,
+        namespace_identifier: :wasp,
+        env_namespace: :soapenv,
+        ssl_verify_mode: :none,
+        open_timeout: 400,
+        read_timeout: 400,
+        log: true,
+        log_level: :debug,
+        logger: Rails.logger,
+        strip_namespaces: false,
+        pretty_print_xml: true
+      )
+
+      response = client.call(:cancel_subscription, :message => message)
 
       logger.info "RESPONSE: #{response}"
 
@@ -146,6 +165,7 @@ module Api::V1
         env_namespace: :soapenv,
         ssl_verify_mode: :none,
         pretty_print_xml: true,
+        logger: Rails.logger,
         log_level: :debug,
         log: true
       )
@@ -159,7 +179,7 @@ module Api::V1
           "@xmlns:wsse" => WSSE_NAMESPACE,
           "@xmlns:wsu" => WSU_NAMESPACE,
           "wsse:UsernameToken" => {
-            "@wsu:Id" => "UsernameToken-124",
+            "@wsu:Id" => "UsernameToken-8",
             "wsse:Nonce"  => generate_nonce(ts),
             "wsu:Created" => ts,
             "wsse:Username"  => USER,
@@ -185,7 +205,37 @@ module Api::V1
       (0...100).map { ("a".."z").to_a[rand(26)] }.join
     end
 
+  private
+
+    def set_subscription
+      @subscription = Subscription.find(params[:id])
+    end
+
+    def subscription_params
+      params.require(:subscription).permit(:state, :service, :msisdn, :message, :reference)
+    end
+
     # DOI Configuration
+
+    def doi_client
+      Savon.client(
+        wsdl: "#{WSDL}",
+        namespace: DOI_NAMESPACE,
+        namespaces: doi_namespaces,
+        wsse_auth: ["tenbew", "tenbew678", :digest],
+        convert_request_keys_to: :none,
+        namespace_identifier: :wasp,
+        env_namespace: :soapenv,
+        ssl_verify_mode: :none,
+        open_timeout: 300,
+        read_timeout: 300,
+        log: true,
+        log_level: :debug,
+        logger: Rails.logger,
+        strip_namespaces: false,
+        pretty_print_xml: true
+      )
+    end
 
     def doi_config
       cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
@@ -234,19 +284,6 @@ module Api::V1
       }
     end
 
-    def doi_client
-      Savon.client(
-        wsdl: "#{WSDL}",
-        namespace: DOI_NAMESPACE,
-        namespaces: doi_namespaces,
-        wsse_auth: ["tenbew", "tenbew678", :digest],
-        ssl_verify_mode: :none, ssl_version: :TLSv1,
-        namespace_identifier: :wasp, env_namespace: :soapenv,
-        open_timeout: 300, read_timeout: 300, log: true, log_level: :debug,
-        convert_request_keys_to: :none, strip_namespaces: false, pretty_print_xml: true
-      )
-    end
-
     def doi_namespaces
       {
        "xmlns:xs" => "http://www.w3.org/2001/XMLSchema",
@@ -260,16 +297,6 @@ module Api::V1
        "xmlns:wsse" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd",
        "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
      }
-    end
-
-  private
-
-    def set_subscription
-      @subscription = Subscription.find(params[:id])
-    end
-
-    def subscription_params
-      params.require(:subscription).permit(:state, :service, :msisdn, :message, :reference)
     end
 
   end
