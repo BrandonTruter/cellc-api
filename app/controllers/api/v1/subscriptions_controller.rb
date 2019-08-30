@@ -48,9 +48,9 @@ module Api::V1
       "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
       "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
     }
-    TIMESTAMP = "2019-08-13T12:10:15.061Z" # JUST FOR TESTING
     WSDL = "http://41.156.64.242:8081/WaspInterface?wsdl"
     ENDP = "http://41.156.64.242:8081/WaspInterface"
+    TIMESTAMP = "2019-08-30T10:10:10.061Z"
     PASS = "tenbew678"
     USER = "tenbew"
 
@@ -90,7 +90,7 @@ module Api::V1
         endpoint: ENDP,
         namespace: DOI_NAMESPACE,
         namespaces: DOI_NAMESPACES,
-        namespace_identifier: :tns,
+        namespace_identifier: :wasp,
         wsse_auth: [USER, PASS],
         env_namespace: :soapenv,
         ssl_verify_mode: :none,
@@ -147,7 +147,13 @@ module Api::V1
         pretty_print_xml: true
       )
 
-      response = client.call(:cancel_subscription, :message => message)
+      response = client.call(:cancel_subscription) do
+        soap_header "wasp:ServiceAuth" => {
+                        "Username" => "#{USER}",
+                        "Password" => "#{PASS}"
+                      }
+        message message
+      end
 
       logger.info "RESPONSE: #{response}"
 
@@ -172,16 +178,15 @@ module Api::V1
     end
 
     def cellc_headers
-      ts = generate_timestamp()
       {
         "wsse:Security" => {
           "@soapenv:mustUnderstand" => "1",
           "@xmlns:wsse" => WSSE_NAMESPACE,
           "@xmlns:wsu" => WSU_NAMESPACE,
           "wsse:UsernameToken" => {
-            "@wsu:Id" => "UsernameToken-8",
-            "wsse:Nonce"  => generate_nonce(ts),
-            "wsu:Created" => ts,
+            "@wsu:Id" => "UsernameToken-1245",
+            "wsse:Nonce"  => generate_nonce(),
+            "wsu:Created" => TIMESTAMP,
             "wsse:Username"  => USER,
             "wsse:Password"  => PASS,
             :attributes! => {
@@ -197,8 +202,8 @@ module Api::V1
       TIMESTAMP || Time.now
     end
 
-    def generate_nonce(ts)
-      Digest::SHA1.hexdigest random_string + ts
+    def generate_nonce()
+      Digest::SHA1.hexdigest random_string + TIMESTAMP
     end
 
     def random_string
