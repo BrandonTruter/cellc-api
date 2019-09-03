@@ -1,6 +1,41 @@
 module Api::V1
   class SubscriptionsController < ApiController
     before_action :set_subscription, only: [:show, :update, :destroy]
+    before_action :set_params, only: [:add_sub, :charge_sub, :cancel_sub]
+
+    # SOAP ENDPOINTS
+
+    # POST /api/v1/add_sub
+    def add_sub
+      logger.info "Api::V1::SubscriptionsController.add_sub : #{@msisdn}"
+      response = DOI::SubscriptionManager.new(@msisdn).subscribe
+      logger.info "WASP Reference: #{response[:wasp_reference]}"
+      logger.info "Service ID: #{response[:service_id]}"
+      logger.info "WASP TID: #{response[:wasp_tid]}"
+
+      render :json => response.to_json
+    end
+
+    # POST /api/v1/charge_sub
+    def charge_sub
+      logger.info "Api::V1::SubscriptionsController.charge_sub : #{@msisdn}"
+      subscriber = DOI::SubscriptionManager.new(@msisdn)
+      response = subscriber.charge
+      logger.info "RESP: #{response}"
+
+      render :json => response.to_json
+    end
+
+    # GET /api/v1/cancel_sub
+    def cancel_sub
+      logger.info "Api::V1::SubscriptionsController.cancel_sub"
+      response = DOI::SubscriptionManager.new(@msisdn).cancel
+      logger.info "RESPONSE: #{response}"
+
+      render :json => response.to_json
+    end
+
+    # REST ENDPOINTS
 
     # GET /api/v1/subscriptions
     def index
@@ -37,28 +72,42 @@ module Api::V1
       @subscription.destroy
     end
 
-    # TODO: Refactor all integration to seperate class, move all endpoints to config
-    # Have to manually generate WSSE headers, savon wsse_auth doesnt allow required customization
-    WSU_NAMESPACE  = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
-    WSSE_NAMESPACE = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
-    PASSWORD_TYPE  = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"
-    NONCE_ENCODING = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"
-    DOI_NAMESPACE  = "http://wasp.doi.soap.protocol.cellc.co.za"
-    DOI_NAMESPACES = {
-      "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-      "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    }
-    WSDL = "http://41.156.64.242:8081/WaspInterface?wsdl"
-    ENDP = "http://41.156.64.242:8081/WaspInterface"
-    TIMESTAMP = "2019-08-30T10:10:10.061Z"
-    PASS = "tenbew678"
-    USER = "tenbew"
+    private
+
+    def set_params
+      @msisdn = params[:msisdn]
+    end
+
+    def set_subscription
+      @subscription = Subscription.find(params[:id])
+    end
+
+    def subscription_params
+      params.require(:subscription).permit(:state, :service, :msisdn, :message, :reference)
+    end
+
+=begin
 
     def add_sub
-      logger.info "Api::V1::SubscriptionsController.add_sub"
+      msisdn = params[:msisdn]
+      logger.info "Api::V1::SubscriptionsController.add_sub : #{msisdn}"
+
+      # subscriber = DOI::SubscriptionManager.new(msisdn)
+      #
+      # response_1 = subscriber.subscribe_1
+      # logger.info "RESPONSE 1: #{response_1}"
+      #
+      # response_2 = subscriber.subscribe_2
+      # logger.info "RESPONSE 2: #{response_2}"
+      #
+      # response_3 = subscriber.subscribe_3
+      # logger.info "RESPONSE 3: #{response_3}"
+      #
+      # response_4 = subscriber.subscribe_4
+      # logger.info "RESPONSE 4: #{response_4}"
 
       message = {
-        :msisdn => "27842333777",
+        :msisdn => "27841323777",
         :serviceName => "Banking",
         :contentProvider => "ABSA",
         :chargeCode => "DOI005",
@@ -66,7 +115,7 @@ module Api::V1
         :contentType => "OTHER",
         :bearerType => "WEB",
         :waspReference => "CellC_ZA",
-        :waspTid => "QQChina"
+        :waspTID => "QQChina"
       }
 
       response = cellc_client.call(:add_subscription) do
@@ -74,16 +123,36 @@ module Api::V1
                         "Username" => USER,
                         "Password" => PASS
                       }
+        soap_action ""
         message message
       end
 
       logger.info "RESP: #{response}"
 
+      # result = response.body[:"ns2:add_subscription_response"][:return]
+      result = response.body[:add_subscription_response][:return]
+      # code = result[:result]
+      # if code == "0" do
+      logger.info "Service ID: #{result[:service_id]}, WASP Reference: #{result[:wasp_reference]}, WASP TID: #{result[:wasp_tid]}"
+        # Service ID: 3345388, WASP Reference: 00, WASP TID: QQChina
+      # end
+
       render :json => response.to_json
     end
 
     def charge_sub
-      logger.info "Api::V1::SubscriptionsController.charge_sub"
+      msisdn = params[:msisdn]
+      logger.info "Api::V1::SubscriptionsController.charge_sub : #{msisdn}"
+
+      # subscriber = DOI::SubscriptionManager.new(msisdn)
+      # response_1 = subscriber.charge_1
+      # logger.info "RESPONSE 1: #{response_1}"
+      #
+      # response_2 = DOI::SubscriptionManager.new(msisdn).charge_2
+      # logger.info "RESPONSE 2: #{response_2}"
+      #
+      # response_3 = DOI::SubscriptionManager.new(msisdn).charge_3
+      # logger.info "RESPONSE 3: #{response_3}"
 
       client = Savon.client(
         wsdl: WSDL,
@@ -100,21 +169,17 @@ module Api::V1
         log_level: :debug,
         log: true
       )
-
       charge_message = {
         :msisdn => "27842333777",
         :waspTID => "QQChina",
         :serviceID => "00"
       }
-
-      response = client.call(:charge_subscriber) do
-        soap_header "wasp:ServiceAuth" => {
-                        "Username" => "#{USER}",
-                        "Password" => "#{PASS}"
-                      }
-        message charge_message
-      end
-
+      response = client.call(:charge_subscriber, message: charge_message, :soap_action => "", :soap_header => {
+        'wasp:ServiceAuth' => {
+          "Username" => "#{USER}",
+          "Password" => "#{PASS}"
+        }
+      })
       logger.info "RESP: #{response}"
 
       render :json => response.to_json
@@ -160,6 +225,12 @@ module Api::V1
       render :json => response.to_json
     end
 
+
+    def doi_operations
+      cellc_client.operations
+      # => [:renotify_subscriber, :charge_subscriber, :get_services, :request_position, :add_forced_subscription, :add_subscription, :cancel_subscription]
+    end
+
     def cellc_client
       Savon.client(
         wsdl: WSDL,
@@ -173,7 +244,8 @@ module Api::V1
         pretty_print_xml: true,
         logger: Rails.logger,
         log_level: :debug,
-        log: true
+        log: true,
+        strip_namespaces: true
       )
     end
 
@@ -211,6 +283,10 @@ module Api::V1
     end
 
   private
+
+    def set_params
+      @msisdn = params[:msisdn]
+    end
 
     def set_subscription
       @subscription = Subscription.find(params[:id])
@@ -303,6 +379,7 @@ module Api::V1
        "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
      }
     end
+=end
 
   end
 end

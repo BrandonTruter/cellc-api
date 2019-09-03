@@ -51,7 +51,6 @@ GEM
       gyoku (>= 0.4.0)
       nokogiri
     arel (9.0.0)
-    awesome_print (1.8.0)
     bootsnap (1.4.4)
       msgpack (~> 1.0)
     builder (3.2.3)
@@ -187,7 +186,6 @@ PLATFORMS
 
 DEPENDENCIES
   active_model_serializers
-  awesome_print
   bootsnap (>= 1.1.0)
   byebug
   factory_girl_rails
