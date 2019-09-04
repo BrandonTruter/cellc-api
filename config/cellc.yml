@@ -5,16 +5,11 @@ development:
   ip: 41.156.64.242
   url: http://41.156.64.242:8081/WaspInterface
   callback_url: https://asgard-mocha.net/cellc_cb1
-
+  endpoint: http://41.156.64.242:8081/WaspInterface
+  wsdl: http://41.156.64.242:8081/WaspInterface?wsdl
+  namespace: http://wasp.doi.soap.protocol.cellc.co.za
+  
 test:
-  port: 8081
-  user: tenbew
-  pass: tenbew678
-  ip: 41.156.64.242
-  url: http://41.156.64.242:8081/WaspInterface
-  callback_url: https://asgard-mocha.net/cellc_cb1
-
-staging:
   port: 8081
   user: tenbew
   pass: tenbew678
@@ -26,6 +21,9 @@ production:
   port: 8081
   user: tenbew
   pass: tenbew678
-  ip: 41.156.64.242
+  ip: 10.228.76.132
   url: http://41.156.64.242:8081/WaspInterface
   callback_url: https://asgard-mocha.net/cellc_cb1
+  endpoint: http://10.228.76.132:8081/WaspInterface
+  wsdl: http://10.228.76.132:8081/WaspInterface?wsdl
+  namespace: http://doi.net.truteq.com/

@@ -8,6 +8,17 @@ module DOI
       @token = token
       @nonce = nonce
       @timestamp = timestamp
+
+      # config = cellc_config
+
+      # auth = config[:auth]
+      # auth[:username]
+      # auth[:password]
+
+      # doi_api = config[:api]
+      # doi_api[:wsdl]
+      # doi_api[:endpoint]
+      # doi_api[:namespace]
     end
 
     def client
@@ -22,7 +33,7 @@ module DOI
         env_namespace: :soapenv,
         ssl_verify_mode: :none,
         logger: Rails.logger,
-        log_level: :debug,
+        log_level: :info,
         log: true,
         encoding: "UTF-8",
         soap_version: 1,
@@ -42,7 +53,6 @@ module DOI
         }
       })
       response.body[:add_subscription_response][:return]
-        #=> {:result=>"0", :service_id=>"3345388", :wasp_reference=>"00", :wasp_tid=>"QQChina"}
     rescue Savon::SOAPFault => error
       fault_code = error.to_hash[:fault][:faultcode]
       puts "ERROR: #{error}, CODE: #{fault_code}"
@@ -80,6 +90,8 @@ module DOI
     # Payloads
 
     def add_subscription_payload
+      qq_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+
       # (Optional) MSISDN of the subscriber for which the service must be registered. The MSISDN must always be specified except in the case where the bearer set to WEB. (27841234567)
       msisdn = @msisdn # || "27841234567"
 
@@ -90,7 +102,7 @@ module DOI
       content_provider = "PSL"
 
       # A valid charge code assigned to the WASP account. This will be provided by Cell C upon account creation.
-      charge_code = "DOI001"
+      charge_code = qq_conf["charge_code"] || "DOI001"
 
       # The charge frequency applicable for this service
       charge_interval = "WEEKLY"
@@ -102,10 +114,10 @@ module DOI
       bearer_type = "WEB"
 
       # (Optional) A reference provided by the WASP associated with the service and returned in replies associated with this request
-      wasp_reference = "00"
+      wasp_reference = qq_conf["serviceID"] || "00"
 
       # Transaction id from WASP linked to this operation. This will be echoed back in the response
-      wasp_tid = "QQChina"
+      wasp_tid = qq_conf["waspTID"] || "QQChina"
 
       # addSubscription payload
       {
@@ -409,6 +421,11 @@ module DOI
       }
     end
 
+    def doi_operations
+      client.operations
+      # => [:renotify_subscriber, :charge_subscriber, :get_services, :request_position, :add_forced_subscription, :add_subscription, :cancel_subscription]
+    end
+
     private
 
     def digest_password
@@ -435,6 +452,33 @@ module DOI
 
     protected
 
+    def cellc_config
+      cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+      {
+        :auth => {
+          :username => cellc_conf["user"],
+          :password => cellc_conf["pass"]
+        },
+        :api => {
+          :wsdl => cellc_conf["wsdl"],
+          :endpoint => cellc_conf["endpoint"],
+          :namespace => cellc_conf["namespace"]
+        },
+        :endpoints => {
+          :url => cellc_conf["url"],
+          :callback_url => cellc_conf["callback_url"],
+          :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+        },
+        :charge_codes => {
+          "DOI001" => "R1",
+          "DOI002" => "R2",
+          "DOI003" => "R3",
+          "DOI004" => "R4",
+          "DOI005" => "R5"
+        }
+      }
+    end
+
     def doi_username
       if Rails.env.production?
         cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
@@ -457,7 +501,8 @@ module DOI
       if Rails.env.production?
         "http://10.228.76.132:8081/WaspInterface?wsdl" || ENV["DOI_LIVE_WSDL"]
       else
-        "http://41.156.64.242:8081/WaspInterface?wsdl" || ENV["DOI_TEST_WSDL"] # "http://localhost:8081/WaspInterface?wsdl"
+        "http://41.156.64.242:8081/WaspInterface?wsdl" || ENV["DOI_TEST_WSDL"]
+        # "http://localhost:8081/WaspInterface?wsdl"
       end
     end
 
@@ -465,7 +510,8 @@ module DOI
       if Rails.env.production?
         "http://10.228.76.132:8081/WaspInterface" || ENV["DOI_LIVE_ENDPOINT"]
       else
-        "http://41.156.64.242:8081/WaspInterface" || ENV["DOI_TEST_ENDPOINT"] # "http://localhost:8081/WaspInterface"
+        "http://41.156.64.242:8081/WaspInterface" || ENV["DOI_TEST_ENDPOINT"]
+        # "http://localhost:8081/WaspInterface"
       end
     end
 
