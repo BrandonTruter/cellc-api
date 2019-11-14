@@ -15,12 +15,12 @@ test:
   MN: CellC_ZA
   charge_code: DOI005
   charge_value: R5
-  
+
 production:
   port: 22
   ip: 156.38.208.218
   waspTID: QQChina
   serviceID: 00
   MN: CellC_ZA
-  charge_code: DOI005
+  charge_code: TENB00500
   charge_value: R5
