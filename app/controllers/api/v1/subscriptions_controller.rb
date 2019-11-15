@@ -1,18 +1,17 @@
 module Api::V1
   class SubscriptionsController < ApiController
     before_action :set_subscription, only: [:show, :update, :destroy]
-    before_action :set_params, only: [:add_sub, :charge_sub, :cancel_sub]
     # before_action :set_subscriber, only: [:add_sub, :charge_sub, :cancel_sub]
-
-    # SOAP ENDPOINTS
+    before_action :set_params, only: [:add_sub, :charge_sub, :cancel_sub, :notify_sub]
 
     # POST /api/v1/add_sub
     def add_sub
       logger.info "Api::V1::SubscriptionsController.add_sub : #{@msisdn}"
       response = DOI::SubscriptionManager.new(@msisdn).subscribe
-      logger.info "WASP Reference: #{response[:wasp_reference]}"
-      logger.info "Service ID: #{response[:service_id]}"
-      logger.info "WASP TID: #{response[:wasp_tid]}"
+      # logger.info "WASP Ref: #{response[:wasp_reference]}"
+      # logger.info "Service ID: #{response[:service_id]}"
+      # logger.info "WASP TID: #{response[:wasp_tid]}"
+      logger.info "RESPONSE: #{response}"
 
       render :json => response.to_json
     end
@@ -20,16 +19,15 @@ module Api::V1
     # POST /api/v1/charge_sub
     def charge_sub
       logger.info "Api::V1::SubscriptionsController.charge_sub : #{@msisdn}"
-      subscriber = DOI::SubscriptionManager.new(@msisdn)
-      response = subscriber.charge
-      logger.info "RESP: #{response}"
+      response = DOI::SubscriptionManager.new(@msisdn).charge
+      logger.info "RESPONSE: #{response}"
 
       render :json => response.to_json
     end
 
     # POST /api/v1/cancel_sub
     def cancel_sub
-      logger.info "Api::V1::SubscriptionsController.cancel_sub"
+      logger.info "Api::V1::SubscriptionsController.cancel_sub : #{@msisdn}"
       response = DOI::SubscriptionManager.new(@msisdn).cancel
       logger.info "RESPONSE: #{response}"
 
@@ -38,7 +36,7 @@ module Api::V1
 
     # POST /api/v1/notify_sub
     def notify_sub
-      logger.info "Api::V1::SubscriptionsController.notify_sub"
+      logger.info "Api::V1::SubscriptionsController.notify_sub : #{@msisdn}"
       response = DOI::SubscriptionManager.new(@msisdn).notify
       logger.info "RESPONSE: #{response}"
 

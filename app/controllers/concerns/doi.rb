@@ -11,13 +11,27 @@ module DOI
     end
 
     def subscribe
-      response = client.call(:add_subscription, message: add_message, :soap_action => "", :soap_header => {
+      message = {
+        "msisdn" => @msisdn,
+        "serviceName" => "Gaming",
+        "contentProvider" => "QQ",
+        "chargeCode" => @qq[:charge_code],
+        "chargeInterval" => "DAILY",
+        "contentType" => "ADULT",
+        "bearerType" => "SMS",
+        "waspReference" => @qq[:serviceID],
+        "waspTID" => @qq[:waspTID]
+      }
+
+      response = client.call(:add_subscription, message: message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
           "Username" => "#{@auth[:user]}",
           "Password" => "#{@auth[:pass]}"
         }
       })
+
       response.body[:add_subscription_response][:return]
+
     rescue Savon::SOAPFault => error
       fault_code = error.to_hash[:fault][:faultcode]
       puts "ERROR: #{error}, CODE: #{fault_code}"
@@ -88,7 +102,7 @@ module DOI
       content_type = "OTHER" # || "ADULT"
 
       # Refer to Annexure A for bearer requirements
-      bearer_type = "Other" # || "WEB"
+      bearer_type = "SMS" # || "WEB"
 
       # (Optional) A reference provided by the WASP associated with the service and returned in replies associated with this request
       wasp_reference = @qq[:serviceID] || "00"
@@ -242,6 +256,59 @@ module DOI
         }
       }
     end
+
+    # def load_default_config
+    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+    #   if cellc_conf["local_ssh_enabled"] == true
+    #     {
+    #       :auth => {
+    #         :user => "tenbew", :pass => "tenbew678"
+    #       },
+    #       :api => {
+    #         :wsdl => "http://localhost:8081/WaspInterface?wsdl",
+    #         :endpoint => "http://localhost:8081/WaspInterface",
+    #         :namespace => cellc_conf["namespace"] || doi_namespace,
+    #         :namespaces => {
+    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
+    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
+    #         }
+    #       },
+    #       :web => {
+    #         :url => cellc_conf["url"],
+    #         :callback_url => cellc_conf["callback_url"],
+    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #       }
+    #     }
+    #   else
+    #     {
+    #       :auth => {
+    #         :user => cellc_conf["user"] || doi_username,
+    #         :pass => cellc_conf["pass"] || doi_password
+    #       },
+    #       :api => {
+    #         :wsdl => cellc_conf["wsdl"] || doi_wsdl,
+    #         :endpoint => cellc_conf["endpoint"] || doi_endpoint,
+    #         :namespace => cellc_conf["namespace"] || doi_namespace,
+    #         :namespaces => {
+    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
+    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
+    #         }
+    #       },
+    #       :web => {
+    #         :url => cellc_conf["url"],
+    #         :callback_url => cellc_conf["callback_url"],
+    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #       },
+    #       :charge_codes => {
+    #         "DOI001" => "R1",
+    #         "DOI002" => "R2",
+    #         "DOI003" => "R3",
+    #         "DOI004" => "R4",
+    #         "DOI005" => "R5"
+    #       }
+    #     }
+    #   end
+    # end
 
     protected
 
