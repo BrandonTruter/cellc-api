@@ -69,27 +69,26 @@ module DOI
     # Payloads
 
     def add_message
-
       # (Optional) MSISDN of the subscriber for which the service must be registered. The MSISDN must always be specified except in the case where the bearer set to WEB. (27841234567)
       msisdn = @msisdn
 
       # A unique service name that will be used to populate the DOI notification sent to a subscriber.
-      service_name = "Soccer Scores"
+      service_name = "Gaming"
 
       # (Optional) An additional field that can be used to uniquely differentiate the service. This field, if provided, will also be used to populate the DOI notification sent to a subscriber. Applicable to aggregators.
-      content_provider = "QQ" || "PSL"
+      content_provider = "QQ" # || "PSL"
 
       # A valid charge code assigned to the WASP account. This will be provided by Cell C upon account creation.
       charge_code = @qq[:charge_code] || "DOI001"
 
       # The charge frequency applicable for this service
-      charge_interval = "DAILY" || "WEEKLY"
+      charge_interval = "DAILY" # || "WEEKLY"
 
       # Type of the content this service will provide. ADULT or OTHER
-      content_type = "OTHER" || "ADULT"
+      content_type = "OTHER" # || "ADULT"
 
       # Refer to Annexure A for bearer requirements
-      bearer_type = "Other" || "WEB"
+      bearer_type = "Other" # || "WEB"
 
       # (Optional) A reference provided by the WASP associated with the service and returned in replies associated with this request
       wasp_reference = @qq[:serviceID] || "00"
@@ -153,8 +152,8 @@ module DOI
         log: true,
         encoding: "UTF-8",
         soap_version: 1,
-        open_timeout: 600,
-        read_timeout: 600,
+        open_timeout: 900,
+        read_timeout: 900,
         raise_errors: false,
         pretty_print_xml: true,
         strip_namespaces: true
@@ -183,8 +182,6 @@ module DOI
       client.operations
       # => [:renotify_subscriber, :charge_subscriber, :get_services, :request_position, :add_forced_subscription, :add_subscription, :cancel_subscription]
     end
-
-    protected
 
     def load_prod_config
       cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
@@ -245,6 +242,8 @@ module DOI
         }
       }
     end
+
+    protected
 
     def doi_username
       if Rails.env.production?
@@ -320,6 +319,37 @@ module DOI
     #     pretty_print_xml: true,
     #     strip_namespaces: false
     #   )
+    # end
+
+    # def cellc_config_current
+    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+    #   {
+    #     :auth => {
+    #       :user => cellc_conf["user"] || doi_username,
+    #       :pass => cellc_conf["pass"] || doi_password
+    #     },
+    #     :api => {
+    #       :wsdl => cellc_conf["wsdl"] || doi_wsdl,
+    #       :endpoint => cellc_conf["endpoint"] || doi_endpoint,
+    #       :namespace => cellc_conf["namespace"] || doi_namespace,
+    #       :namespaces => {
+    #         "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
+    #         "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
+    #       }
+    #     },
+    #     :web => {
+    #       :url => cellc_conf["url"],
+    #       :callback_url => cellc_conf["callback_url"],
+    #       :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #     },
+    #     :charge_codes => {
+    #       "DOI001" => "R1",
+    #       "DOI002" => "R2",
+    #       "DOI003" => "R3",
+    #       "DOI004" => "R4",
+    #       "DOI005" => "R5"
+    #     }
+    #   }
     # end
 
     # def cellc_config
