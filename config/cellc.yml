@@ -3,11 +3,14 @@ development:
   user: tenbew
   pass: tenbew678
   ip: 41.156.64.242
-  url: http://41.156.64.242:8081/WaspInterface
+  # url: http://41.156.64.242:8081/WaspInterface
   callback_url: https://asgard-mocha.net/cellc_cb1
-  endpoint: http://41.156.64.242:8081/WaspInterface
-  wsdl: http://41.156.64.242:8081/WaspInterface?wsdl
+  # endpoint: http://41.156.64.242:8081/WaspInterface
+  # wsdl: http://41.156.64.242:8081/WaspInterface?wsdl
   namespace: http://wasp.doi.soap.protocol.cellc.co.za
+  endpoint: https://41.156.64.242/WaspInterface
+  wsdl: https://41.156.64.242/WaspInterface?wsdl
+  url: https://41.156.64.242/WaspInterface
   local_ssh_enabled: true
   charge_code: DOI005
 

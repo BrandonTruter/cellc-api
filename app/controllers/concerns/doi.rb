@@ -73,7 +73,7 @@ module DOI
           "Password" => "#{@auth[:pass]}"
         }
       })
-      response.body[:renotify_subscriber_response]
+      response.body[:renotify_subscriber_response][:return]
     rescue Savon::SOAPFault => error
       fault_code = error.to_hash[:fault][:faultcode]
       puts "ERROR: #{error}, CODE: #{fault_code}"
@@ -230,13 +230,13 @@ module DOI
       cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
       {
         :auth => {
-          :user => cellc_conf["user"] || doi_username,
-          :pass => cellc_conf["pass"] || doi_password
+          :user => cellc_conf["user"], # || doi_username,
+          :pass => cellc_conf["pass"]# || doi_password
         },
         :api => {
-          :wsdl => cellc_conf["wsdl"] || doi_wsdl,
-          :endpoint => cellc_conf["endpoint"] || doi_endpoint,
-          :namespace => cellc_conf["namespace"] || doi_namespace,
+          :wsdl => cellc_conf["wsdl"], # || doi_wsdl,
+          :endpoint => cellc_conf["endpoint"], # || doi_endpoint,
+          :namespace => cellc_conf["namespace"], # || doi_namespace,
           :namespaces => {
             "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
             "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
@@ -248,11 +248,11 @@ module DOI
           :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
         },
         :charge_codes => {
-          "DOI001" => "R1",
-          "DOI002" => "R2",
-          "DOI003" => "R3",
-          "DOI004" => "R4",
           "DOI005" => "R5"
+          # "DOI001" => "R1",
+          # "DOI002" => "R2",
+          # "DOI003" => "R3",
+          # "DOI004" => "R4",
         }
       }
     end
