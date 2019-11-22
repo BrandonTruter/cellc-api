@@ -11,27 +11,13 @@ module DOI
     end
 
     def subscribe
-      message = {
-        "msisdn" => @msisdn,
-        "serviceName" => "Gaming",
-        "contentProvider" => "QQ",
-        "chargeCode" => @qq[:charge_code],
-        "chargeInterval" => "DAILY",
-        "contentType" => "ADULT",
-        "bearerType" => "SMS",
-        "waspReference" => @qq[:serviceID],
-        "waspTID" => @qq[:waspTID]
-      }
-
-      response = client.call(:add_subscription, message: message, :soap_action => "", :soap_header => {
+      response = client.call(:add_subscription, message: add_sub_message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
           "Username" => "#{@auth[:user]}",
           "Password" => "#{@auth[:pass]}"
         }
       })
-
       response.body[:add_subscription_response][:return]
-
     rescue Savon::SOAPFault => error
       fault_code = error.to_hash[:fault][:faultcode]
       puts "ERROR: #{error}, CODE: #{fault_code}"
@@ -82,24 +68,23 @@ module DOI
 
     # Payloads
 
-    def add_message
+    def add_sub_message
       # (Optional) MSISDN of the subscriber for which the service must be registered. The MSISDN must always be specified except in the case where the bearer set to WEB. (27841234567)
       msisdn = @msisdn
-
       # A unique service name that will be used to populate the DOI notification sent to a subscriber.
-      service_name = "Gaming"
+      service_name = "QQ-Tenbew Games" # || "Gaming"
 
       # (Optional) An additional field that can be used to uniquely differentiate the service. This field, if provided, will also be used to populate the DOI notification sent to a subscriber. Applicable to aggregators.
-      content_provider = "QQ" # || "PSL"
+      content_provider = "Tenbew" # || "QQ"
 
       # A valid charge code assigned to the WASP account. This will be provided by Cell C upon account creation.
-      charge_code = @qq[:charge_code] || "DOI001"
+      charge_code = @qq[:charge_code] # || "DOI001"
 
       # The charge frequency applicable for this service
       charge_interval = "DAILY" # || "WEEKLY"
 
       # Type of the content this service will provide. ADULT or OTHER
-      content_type = "OTHER" # || "ADULT"
+      content_type = "ADULT" # || "OTHER"
 
       # Refer to Annexure A for bearer requirements
       bearer_type = "SMS" # || "WEB"
@@ -110,7 +95,6 @@ module DOI
       # Transaction id from WASP linked to this operation. This will be echoed back in the response
       wasp_tid = @qq[:waspTID] || "QQChina"
 
-      # addSubscription payload
       {
         "msisdn" => msisdn,
         "serviceName" => service_name,
@@ -230,13 +214,13 @@ module DOI
       cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
       {
         :auth => {
-          :user => cellc_conf["user"], # || doi_username,
-          :pass => cellc_conf["pass"]# || doi_password
+          :user => cellc_conf["user"],
+          :pass => cellc_conf["pass"]
         },
         :api => {
-          :wsdl => cellc_conf["wsdl"], # || doi_wsdl,
-          :endpoint => cellc_conf["endpoint"], # || doi_endpoint,
-          :namespace => cellc_conf["namespace"], # || doi_namespace,
+          :wsdl => cellc_conf["wsdl"],
+          :endpoint => cellc_conf["endpoint"],
+          :namespace => cellc_conf["namespace"],
           :namespaces => {
             "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
             "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
@@ -247,13 +231,7 @@ module DOI
           :callback_url => cellc_conf["callback_url"],
           :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
         },
-        :charge_codes => {
-          "DOI005" => "R5"
-          # "DOI001" => "R1",
-          # "DOI002" => "R2",
-          # "DOI003" => "R3",
-          # "DOI004" => "R4",
-        }
+        :charge_code => cellc_conf["charge_code"]
       }
     end
 
@@ -470,6 +448,29 @@ module DOI
     #       }
     #     }
     #   end
+    # end
+
+    # def add_message
+    #   msisdn = @msisdn
+    #   service_name = "Gaming"
+    #   content_provider = "QQ" # || "PSL"
+    #   charge_code = @qq[:charge_code] || "DOI001"
+    #   charge_interval = "DAILY" # || "WEEKLY"
+    #   content_type = "OTHER" # || "ADULT"
+    #   bearer_type = "SMS" # || "WEB"
+    #   wasp_reference = @qq[:serviceID] || "00"
+    #   wasp_tid = @qq[:waspTID] || "QQChina"
+    #   {
+    #     "msisdn" => msisdn,
+    #     "serviceName" => service_name,
+    #     "contentProvider" => content_provider,
+    #     "chargeCode" => charge_code,
+    #     "chargeInterval" => charge_interval,
+    #     "contentType" => content_type,
+    #     "bearerType" => bearer_type,
+    #     "waspReference" => wasp_reference,
+    #     "waspTID" => wasp_tid
+    #   }
     # end
 
   end
