@@ -178,7 +178,6 @@ module DOI
 
     def operations
       client.operations
-      # => [:renotify_subscriber, :charge_subscriber, :get_services, :request_position, :add_forced_subscription, :add_subscription, :cancel_subscription]
     end
 
     def load_prod_config
@@ -234,59 +233,6 @@ module DOI
         :charge_code => cellc_conf["charge_code"]
       }
     end
-
-    # def load_default_config
-    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-    #   if cellc_conf["local_ssh_enabled"] == true
-    #     {
-    #       :auth => {
-    #         :user => "tenbew", :pass => "tenbew678"
-    #       },
-    #       :api => {
-    #         :wsdl => "http://localhost:8081/WaspInterface?wsdl",
-    #         :endpoint => "http://localhost:8081/WaspInterface",
-    #         :namespace => cellc_conf["namespace"] || doi_namespace,
-    #         :namespaces => {
-    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    #         }
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       }
-    #     }
-    #   else
-    #     {
-    #       :auth => {
-    #         :user => cellc_conf["user"] || doi_username,
-    #         :pass => cellc_conf["pass"] || doi_password
-    #       },
-    #       :api => {
-    #         :wsdl => cellc_conf["wsdl"] || doi_wsdl,
-    #         :endpoint => cellc_conf["endpoint"] || doi_endpoint,
-    #         :namespace => cellc_conf["namespace"] || doi_namespace,
-    #         :namespaces => {
-    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    #         }
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       },
-    #       :charge_codes => {
-    #         "DOI001" => "R1",
-    #         "DOI002" => "R2",
-    #         "DOI003" => "R3",
-    #         "DOI004" => "R4",
-    #         "DOI005" => "R5"
-    #       }
-    #     }
-    #   end
-    # end
 
     protected
 
@@ -364,6 +310,59 @@ module DOI
     #     pretty_print_xml: true,
     #     strip_namespaces: false
     #   )
+    # end
+
+    # def load_default_config
+    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+    #   if cellc_conf["local_ssh_enabled"] == true
+    #     {
+    #       :auth => {
+    #         :user => "tenbew", :pass => "tenbew678"
+    #       },
+    #       :api => {
+    #         :wsdl => "http://localhost:8081/WaspInterface?wsdl",
+    #         :endpoint => "http://localhost:8081/WaspInterface",
+    #         :namespace => cellc_conf["namespace"] || doi_namespace,
+    #         :namespaces => {
+    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
+    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
+    #         }
+    #       },
+    #       :web => {
+    #         :url => cellc_conf["url"],
+    #         :callback_url => cellc_conf["callback_url"],
+    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #       }
+    #     }
+    #   else
+    #     {
+    #       :auth => {
+    #         :user => cellc_conf["user"] || doi_username,
+    #         :pass => cellc_conf["pass"] || doi_password
+    #       },
+    #       :api => {
+    #         :wsdl => cellc_conf["wsdl"] || doi_wsdl,
+    #         :endpoint => cellc_conf["endpoint"] || doi_endpoint,
+    #         :namespace => cellc_conf["namespace"] || doi_namespace,
+    #         :namespaces => {
+    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
+    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
+    #         }
+    #       },
+    #       :web => {
+    #         :url => cellc_conf["url"],
+    #         :callback_url => cellc_conf["callback_url"],
+    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #       },
+    #       :charge_codes => {
+    #         "DOI001" => "R1",
+    #         "DOI002" => "R2",
+    #         "DOI003" => "R3",
+    #         "DOI004" => "R4",
+    #         "DOI005" => "R5"
+    #       }
+    #     }
+    #   end
     # end
 
     # def cellc_config_current
@@ -448,29 +447,6 @@ module DOI
     #       }
     #     }
     #   end
-    # end
-
-    # def add_message
-    #   msisdn = @msisdn
-    #   service_name = "Gaming"
-    #   content_provider = "QQ" # || "PSL"
-    #   charge_code = @qq[:charge_code] || "DOI001"
-    #   charge_interval = "DAILY" # || "WEEKLY"
-    #   content_type = "OTHER" # || "ADULT"
-    #   bearer_type = "SMS" # || "WEB"
-    #   wasp_reference = @qq[:serviceID] || "00"
-    #   wasp_tid = @qq[:waspTID] || "QQChina"
-    #   {
-    #     "msisdn" => msisdn,
-    #     "serviceName" => service_name,
-    #     "contentProvider" => content_provider,
-    #     "chargeCode" => charge_code,
-    #     "chargeInterval" => charge_interval,
-    #     "contentType" => content_type,
-    #     "bearerType" => bearer_type,
-    #     "waspReference" => wasp_reference,
-    #     "waspTID" => wasp_tid
-    #   }
     # end
 
   end
