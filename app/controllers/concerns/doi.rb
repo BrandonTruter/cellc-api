@@ -10,6 +10,15 @@ module DOI
       @qq = qq_config
     end
 
+    # def initialize(msisdn, service_id)
+    #   config = cellc_config
+    #   @auth = config[:auth]
+    #   @api = config[:api]
+    #   @qq = qq_config
+    #   @msisdn = msisdn
+    #   @service_id = service_id
+    # end
+
     def subscribe
       response = client.call(:add_subscription, message: add_sub_message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
@@ -36,6 +45,18 @@ module DOI
       fault_code = error.to_hash[:fault][:faultcode]
       puts "ERROR: #{error}, CODE: #{fault_code}"
       raise StandardError, fault_code
+    end
+
+    def charge_subscription(service_id)
+      message = { :msisdn => @msisdn, :serviceID => service_id, :waspTID => @qq[:waspTID] }
+      response = client.call(:charge_subscriber, message: message, :soap_action => "", :soap_header => {
+        'wasp:ServiceAuth' => {
+          "Username" => "#{@auth[:user]}", "Password" => "#{@auth[:pass]}"
+        }
+      })
+      response.body[:charge_subscriber_response][:return]
+    rescue Savon::SOAPFault => error
+      raise StandardError, error.to_hash[:fault][:faultcode]
     end
 
     def cancel
@@ -168,16 +189,55 @@ module DOI
       }
     end
 
+    # def cellc_config
+    #   if Rails.env.production?
+    #     load_prod_config
+    #   else
+    #     load_default_config
+    #   end
+    # end
     def cellc_config
-      if Rails.env.production?
-        load_prod_config
-      else
-        load_default_config
-      end
+      cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+      {
+        :auth => {
+          :user => cellc_conf["user"],
+          :pass => cellc_conf["pass"]
+        },
+        :api => {
+          :wsdl => cellc_conf["wsdl"],
+          :endpoint => cellc_conf["endpoint"],
+          :namespace => cellc_conf["namespace"],
+          :namespaces => cellc_namespaces
+        },
+        :web => {
+          :url => cellc_conf["url"],
+          :callback_url => cellc_conf["callback_url"],
+          :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+        },
+        :charge_code => cellc_conf["charge_code"]
+      }
     end
 
     def operations
       client.operations
+    end
+
+    def cellc_namespaces
+      if Rails.env.production?
+        {
+          "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema",
+          "xmlns:wsdl" => "http://schemas.xmlsoap.org/wsdl/",
+          "xmlns:tns" => "http://doi.net.truteq.com/",
+          "xmlns:soap" => "http://schemas.xmlsoap.org/wsdl/soap/",
+          "xmlns:ns2" => "http://schemas.xmlsoap.org/soap/http",
+          "xmlns:ns1" => "http://wasp.doi.soap.protocol.cellc.co.za"
+        }
+      else
+        {
+          "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
+          "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
+        }
+      end
     end
 
     def load_prod_config
@@ -201,8 +261,8 @@ module DOI
           }
         },
         :web => {
+          :url => cellc_conf["url"],
           :callback_url => cellc_conf["callback_url"],
-          :url => cellc_conf["url"] || cellc_conf["url_2"],
           :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
         },
         :charge_code => cellc_conf["charge_code"]

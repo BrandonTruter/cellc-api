@@ -30,11 +30,11 @@ production:
   user: tenbew
   pass: tenbew678
   ip: 41.156.64.246
-  ip_2: 41.156.64.242
+  # ip_2: 41.156.64.242
   charge_code: TENB00500
   local_ssh_enabled: false
   url: https://41.156.64.246:443/WaspInterface
-  url_2: https://41.156.64.242:443/WaspInterface
+  # url_2: https://41.156.64.242:443/WaspInterface
   callback_url: https://asgard-mocha.net/cellc_cb1
   endpoint: https://41.156.64.246:443/WaspInterface
   wsdl: https://41.156.64.246:443/WaspInterface?wsdl

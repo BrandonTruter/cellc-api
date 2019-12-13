@@ -8,9 +8,6 @@ module Api::V1
     def add_sub
       logger.info "Api::V1::SubscriptionsController.add_sub : #{@msisdn}"
       response = DOI::SubscriptionManager.new(@msisdn).subscribe
-      # logger.info "WASP Ref: #{response[:wasp_reference]}"
-      # logger.info "Service ID: #{response[:service_id]}"
-      # logger.info "WASP TID: #{response[:wasp_tid]}"
       logger.info "RESPONSE: #{response}"
 
       render :json => response.to_json
@@ -42,6 +39,23 @@ module Api::V1
 
       render :json => response.to_json
     end
+
+    # POST /api/v1/charge
+    def charge
+      logger.info "Api::V1::SubscriptionsController.charge"
+
+      msisdn = params[:msisdn]
+      logger.info "msisdn: #{msisdn}"
+      service_id = params[:service_id]
+      logger.info "service_id: #{service_id}"
+
+      subscriber = DOI::SubscriptionManager.new(msisdn)
+      response = subscriber.charge_subscription(service_id)
+      logger.info "ChargeSubscription Response: #{response}"
+
+      render :json => response.to_json
+    end
+
 
     # REST ENDPOINTS
 
