@@ -1,6 +1,6 @@
 module DOI
   class SubscriptionManager
-    attr_reader :msisdn
+    # attr_reader :msisdn
 
     def initialize(msisdn)
       config = cellc_config
@@ -9,15 +9,6 @@ module DOI
       @msisdn = msisdn
       @qq = qq_config
     end
-
-    # def initialize(msisdn, service_id)
-    #   config = cellc_config
-    #   @auth = config[:auth]
-    #   @api = config[:api]
-    #   @qq = qq_config
-    #   @msisdn = msisdn
-    #   @service_id = service_id
-    # end
 
     def subscribe
       response = client.call(:add_subscription, message: add_sub_message, :soap_action => "", :soap_header => {
@@ -47,18 +38,6 @@ module DOI
       raise StandardError, fault_code
     end
 
-    def charge_subscription(service_id)
-      message = { :msisdn => @msisdn, :serviceID => service_id, :waspTID => @qq[:waspTID] }
-      response = client.call(:charge_subscriber, message: message, :soap_action => "", :soap_header => {
-        'wasp:ServiceAuth' => {
-          "Username" => "#{@auth[:user]}", "Password" => "#{@auth[:pass]}"
-        }
-      })
-      response.body[:charge_subscriber_response][:return]
-    rescue Savon::SOAPFault => error
-      raise StandardError, error.to_hash[:fault][:faultcode]
-    end
-
     def cancel
       response = client.call(:cancel_subscription, message: cancel_message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
@@ -73,14 +52,41 @@ module DOI
       raise StandardError, fault_code
     end
 
-    def notify
-      response = client.call(:renotify_subscriber, message: notify_message, :soap_action => "", :soap_header => {
+    def notify(service_id)
+      message = notify_message(service_id)
+      response = client.call(:renotify_subscriber, message: message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
           "Username" => "#{@auth[:user]}",
           "Password" => "#{@auth[:pass]}"
         }
       })
       response.body[:renotify_subscriber_response][:return]
+    rescue Savon::SOAPFault => error
+      fault_code = error.to_hash[:fault][:faultcode]
+      puts "ERROR: #{error}, CODE: #{fault_code}"
+      raise StandardError, fault_code
+    end
+
+    def charge_subscription(service_id = nil)
+      message = { :msisdn => @msisdn, :serviceID => service_id, :waspTID => @qq[:waspTID] }
+      response = client.call(:charge_subscriber, message: message, :soap_action => "", :soap_header => {
+        'wasp:ServiceAuth' => {
+          "Username" => "#{@auth[:user]}", "Password" => "#{@auth[:pass]}"
+        }
+      })
+      response.body[:charge_subscriber_response][:return]
+    rescue Savon::SOAPFault => error
+      raise StandardError, error.to_hash[:fault][:faultcode]
+    end
+
+    def cancel_subscription(service_id)
+      response = client.call(:cancel_subscription, message: cancel_message(service_id), :soap_action => "", :soap_header => {
+        'wasp:ServiceAuth' => {
+          "Username" => "#{@auth[:user]}",
+          "Password" => "#{@auth[:pass]}"
+        }
+      })
+      response.body[:cancel_subscription_response]
     rescue Savon::SOAPFault => error
       fault_code = error.to_hash[:fault][:faultcode]
       puts "ERROR: #{error}, CODE: #{fault_code}"
@@ -137,19 +143,19 @@ module DOI
       }
     end
 
-    def cancel_message
+    def cancel_message(service_id = nil)
       {
         :msisdn => @msisdn,
         :waspTID => @qq[:waspTID],
-        :serviceID => @qq[:serviceID]
+        :serviceID => service_id || @qq[:serviceID]
       }
     end
 
-    def notify_message
+    def notify_message(service_id)
       {
         :msisdn => @msisdn, # MSISDN - MSISDN of the subscriber for which the service is registered
         :waspTID => @qq[:waspTID], # WaspTID - Transaction id from WASP linked to this operation. This will be echoed back in the response
-        :serviceID => @qq[:serviceID] # (Optional) serviceID - The serviceID identifying the service to send the re-notify message to
+        :serviceID => service_id || @qq[:serviceID] # (Optional) serviceID - The serviceID identifying the service to send the re-notify message to
       }
     end
 
@@ -189,34 +195,76 @@ module DOI
       }
     end
 
+    def cellc_config
+      if Rails.env.production?
+        load_prod_config
+      else
+        load_default_config
+      end
+    end
     # def cellc_config
-    #   if Rails.env.production?
-    #     load_prod_config
+    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+    #   {
+    #     :auth => {
+    #       :user => cellc_conf["user"],
+    #       :pass => cellc_conf["pass"]
+    #     },
+    #     :api => {
+    #       :wsdl => cellc_conf["wsdl"],
+    #       :endpoint => cellc_conf["endpoint"],
+    #       :namespace => cellc_conf["namespace"],
+    #       :namespaces => cellc_namespaces
+    #     },
+    #     :web => {
+    #       :url => cellc_conf["url"],
+    #       :callback_url => cellc_conf["callback_url"],
+    #       :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #     },
+    #     :charge_code => cellc_conf["charge_code"]
+    #   }
+    # end
+    # def cellc_config
+    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+    #
+    #   if cellc_conf["local_ssh_enabled"] == true
+    #     {
+    #       :auth => {
+    #         :user => cellc_conf["user"],
+    #         :pass => cellc_conf["pass"]
+    #       },
+    #       :api => {
+    #         :wsdl => "http://localhost:8081/WaspInterface?wsdl",
+    #         :endpoint => "http://localhost:8081/WaspInterface",
+    #         :namespace => cellc_conf["namespace"] || doi_namespace,
+    #         :namespaces => cellc_namespaces
+    #       },
+    #       :web => {
+    #         :url => cellc_conf["url"],
+    #         :callback_url => cellc_conf["callback_url"],
+    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #       }
+    #     }
     #   else
-    #     load_default_config
+    #     {
+    #       :auth => {
+    #         :user => cellc_conf["user"],
+    #         :pass => cellc_conf["pass"]
+    #       },
+    #       :api => {
+    #         :wsdl => cellc_conf["wsdl"],
+    #         :endpoint => cellc_conf["endpoint"],
+    #         :namespace => cellc_conf["namespace"],
+    #         :namespaces => cellc_namespaces
+    #       },
+    #       :web => {
+    #         :url => cellc_conf["url"],
+    #         :callback_url => cellc_conf["callback_url"],
+    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+    #       },
+    #       :charge_code => cellc_conf["charge_code"]
+    #     }
     #   end
     # end
-    def cellc_config
-      cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-      {
-        :auth => {
-          :user => cellc_conf["user"],
-          :pass => cellc_conf["pass"]
-        },
-        :api => {
-          :wsdl => cellc_conf["wsdl"],
-          :endpoint => cellc_conf["endpoint"],
-          :namespace => cellc_conf["namespace"],
-          :namespaces => cellc_namespaces
-        },
-        :web => {
-          :url => cellc_conf["url"],
-          :callback_url => cellc_conf["callback_url"],
-          :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-        },
-        :charge_code => cellc_conf["charge_code"]
-      }
-    end
 
     def operations
       client.operations

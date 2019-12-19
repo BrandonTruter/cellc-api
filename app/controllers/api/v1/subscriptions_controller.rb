@@ -1,8 +1,8 @@
 module Api::V1
   class SubscriptionsController < ApiController
     before_action :set_subscription, only: [:show, :update, :destroy]
-    # before_action :set_subscriber, only: [:add_sub, :charge_sub, :cancel_sub]
-    before_action :set_params, only: [:add_sub, :charge_sub, :cancel_sub, :notify_sub]
+    before_action :set_subscriber, only: [:charge, :cancel_sub, :notify_sub]
+    before_action :set_params, only: [:add_sub, :charge_sub, :charge, :cancel_sub, :notify_sub]
 
     # POST /api/v1/add_sub
     def add_sub
@@ -25,7 +25,11 @@ module Api::V1
     # POST /api/v1/cancel_sub
     def cancel_sub
       logger.info "Api::V1::SubscriptionsController.cancel_sub : #{@msisdn}"
-      response = DOI::SubscriptionManager.new(@msisdn).cancel
+      if @subscriber.nil? && @service_id.nil?
+        response = DOI::SubscriptionManager.new(@msisdn).cancel
+      else
+        response = @subscriber.cancel_subscription(@service_id)
+      end
       logger.info "RESPONSE: #{response}"
 
       render :json => response.to_json
@@ -34,7 +38,8 @@ module Api::V1
     # POST /api/v1/notify_sub
     def notify_sub
       logger.info "Api::V1::SubscriptionsController.notify_sub : #{@msisdn}"
-      response = DOI::SubscriptionManager.new(@msisdn).notify
+      # response = DOI::SubscriptionManager.new(@msisdn).notify
+      response = @subscriber.notify(@service_id)
       logger.info "RESPONSE: #{response}"
 
       render :json => response.to_json
@@ -43,15 +48,13 @@ module Api::V1
     # POST /api/v1/charge
     def charge
       logger.info "Api::V1::SubscriptionsController.charge"
-
-      msisdn = params[:msisdn]
-      logger.info "msisdn: #{msisdn}"
-      service_id = params[:service_id]
-      logger.info "service_id: #{service_id}"
-
-      subscriber = DOI::SubscriptionManager.new(msisdn)
-      response = subscriber.charge_subscription(service_id)
-      logger.info "ChargeSubscription Response: #{response}"
+      # subscriber = DOI::SubscriptionManager.new(msisdn)
+      sub = @subscriber.nil? ? DOI::SubscriptionManager.new(@msisdn) : @subscriber
+      service_id = @service_id.nil? ? params[:service_id] : @service_id
+      logger.info "msisdn: #{msisdn}, service_id: #{service_id}"
+      # response = subscriber.charge_subscription(service_id)
+      response = sub.charge_subscription(service_id)
+      logger.info "RESPONSE: #{response}"
 
       render :json => response.to_json
     end
@@ -108,10 +111,10 @@ module Api::V1
       params.require(:subscription).permit(:state, :service, :msisdn, :message, :reference)
     end
 
-    # def set_subscriber
-      # sub = Subscription.find(params[:msisdn])
-      # msisdn = params[:msisdn].present? ? params[:msisdn] : sub.msisdn
-      # @subscriber = DOI::SubscriptionManager.new(params[:msisdn])
-    # end
+    def set_subscriber
+      msisdn = @msisdn.nil? ? params[:msisdn] : @msisdn
+      @subscriber = DOI::SubscriptionManager.new(msisdn)
+      @service_id = params[:service_id] unless params[:service_id].nil?
+    end
   end
 end

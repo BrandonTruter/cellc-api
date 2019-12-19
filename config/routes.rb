@@ -9,5 +9,4 @@ Rails.application.routes.draw do
       post '/notify_sub', to: 'subscriptions#notify_sub'
     end
   end
-  # resources :subscriptions
 end
