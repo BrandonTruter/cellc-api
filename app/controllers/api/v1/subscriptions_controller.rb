@@ -51,7 +51,7 @@ module Api::V1
       # subscriber = DOI::SubscriptionManager.new(msisdn)
       sub = @subscriber.nil? ? DOI::SubscriptionManager.new(@msisdn) : @subscriber
       service_id = @service_id.nil? ? params[:service_id] : @service_id
-      logger.info "msisdn: #{msisdn}, service_id: #{service_id}"
+      logger.info "msisdn: #{@msisdn}, service_id: #{service_id}"
       # response = subscriber.charge_subscription(service_id)
       response = sub.charge_subscription(service_id)
       logger.info "RESPONSE: #{response}"

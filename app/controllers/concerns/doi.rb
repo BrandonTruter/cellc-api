@@ -159,18 +159,56 @@ module DOI
       }
     end
 
-
     def test_doi_operations(wasp_ref, wasp_tid)
       add_message = {
+        "msisdn" => @msisdn,
+        "serviceName" => "QQ-Tenbew Games",
+        "contentProvider" => "Tenbew",
+        "chargeCode" => @qq[:charge_code],
+        "chargeInterval" => "DAILY",
+        "contentType" => "ADULT",
+        "bearerType" => "SMS",
+        "waspReference" => wasp_ref,
+        "waspTID" => wasp_tid
+      }
+      addsub_response = client.call(:add_subscription, message: add_message, :soap_action => "", :soap_header => {
+        'wasp:ServiceAuth' => {
+          "Username" => "#{@auth[:user]}",
+          "Password" => "#{@auth[:pass]}"
+        }
+      })
+      response = addsub_response.body[:add_subscription_response]
+      puts "AddSubscription Response: #{response}"
+
+      charge_message = {
         :msisdn => @msisdn,
-        :serviceName => "QQ-Tenbew Games",
-        :contentProvider => "Tenbew",
-        :chargeCode => @qq[:charge_code],
-        :chargeInterval => "DAILY",
-        :contentType => "ADULT",
-        :bearerType => "SMS",
-        :waspReference => wasp_ref,
+        :serviceID => response[:return][:service_id],
         :waspTid => wasp_tid
+      }
+      charge_response = client.call(:charge_subscriber, message: charge_message, :soap_action => "", :soap_header => {
+        'wasp:ServiceAuth' => {
+          "Username" => "#{@auth[:user]}", "Password" => "#{@auth[:pass]}"
+        }
+      })
+      puts "ChargeSubscription Response: #{charge_response.body[:charge_subscriber_response]}"
+
+    rescue Savon::SOAPFault => error
+      fault_code = error.to_hash[:fault][:faultcode]
+      puts "ERROR: #{error}, CODE: #{fault_code}"
+      raise StandardError, fault_code
+    end
+
+    def test_prod_operations(wasp_ref, wasp_tid)
+      add_message = {
+        "msisdn" => @msisdn,
+        "serviceName" => "QQ-Tenbew Games",
+        "contentProvider" => "Tenbew",
+        "chargeCode" => @qq[:charge_code],
+        "chargeInterval" => "DAILY",
+        "contentType" => "ADULT",
+        "bearerType" => "SMS",
+        "waspReference" => wasp_ref,
+        "waspTID" => wasp_tid
       }
       addsub_response = prod_client.call(:add_subscription, message: add_message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
@@ -178,10 +216,9 @@ module DOI
           "Password" => "#{@auth[:pass]}"
         }
       })
-
       response = addsub_response.body[:add_subscription_response]
       puts "AddSubscription Response: #{response}"
-      
+
       charge_message = {
         :msisdn => @msisdn,
         :serviceID => response[:return][:service_id],
@@ -199,7 +236,6 @@ module DOI
       puts "ERROR: #{error}, CODE: #{fault_code}"
       raise StandardError, fault_code
     end
-
 
     private
 
