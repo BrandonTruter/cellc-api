@@ -162,6 +162,14 @@ module DOI
     private
 
     def client
+      if Rails.env.production?
+        prod_client
+      else
+        dev_client
+      end
+    end
+
+    def dev_client
       Savon.client(
         wsdl: @api[:wsdl],
         endpoint: @api[:endpoint],
@@ -184,6 +192,45 @@ module DOI
         strip_namespaces: true
       )
     end
+
+    def prod_client
+      Savon.client(
+        wsdl: @api[:wsdl],
+        endpoint: @api[:endpoint],
+        namespace: @api[:namespace],
+        namespaces: @api[:namespaces],
+        wsse_auth: [@auth[:user], @auth[:pass]],
+        ssl_verify_mode: :none, ssl_version: :TLSv1,
+        log: true, logger: Rails.logger, log_level: :info,
+        namespace_identifier: :wasp, env_namespace: :soapenv,
+        element_form_default: :unqualified, encoding: "UTF-8",
+        raise_errors: true, pretty_print_xml: true, strip_namespaces: true
+      )
+    end
+
+    # def client
+    #   Savon.client(
+    #     wsdl: @api[:wsdl],
+    #     endpoint: @api[:endpoint],
+    #     namespace: @api[:namespace],
+    #     namespaces: @api[:namespaces],
+    #     wsse_auth: [@auth[:user], @auth[:pass]],
+    #     element_form_default: :unqualified,
+    #     namespace_identifier: :wasp,
+    #     env_namespace: :soapenv,
+    #     ssl_verify_mode: :none,
+    #     logger: Rails.logger,
+    #     log_level: :debug,
+    #     log: true,
+    #     encoding: "UTF-8",
+    #     soap_version: 1,
+    #     open_timeout: 900,
+    #     read_timeout: 900,
+    #     raise_errors: false,
+    #     pretty_print_xml: true,
+    #     strip_namespaces: true
+    #   )
+    # end
 
     def qq_config
       qq_conf = TenbewDoiApi::Application.config.QQ_CONFIG[Rails.env]
