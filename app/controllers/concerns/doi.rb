@@ -179,19 +179,23 @@ module DOI
       })
       response = addsub_response.body[:add_subscription_response]
       puts "AddSubscription Response: #{response}"
+      service_id = response[:return][:service_id]
 
-      charge_message = {
-        :msisdn => @msisdn,
-        :serviceID => response[:return][:service_id],
-        :waspTid => wasp_tid
-      }
-      charge_response = client.call(:charge_subscriber, message: charge_message, :soap_action => "", :soap_header => {
-        'wasp:ServiceAuth' => {
-          "Username" => "#{@auth[:user]}", "Password" => "#{@auth[:pass]}"
+      if service_id.nil?
+        puts "Skipping ChargeSubscription, no serviceID returned in AddSubscription response"
+      else
+        charge_message = {
+          :msisdn => @msisdn,
+          :serviceID => service_id,
+          :waspTID => wasp_tid
         }
-      })
-      puts "ChargeSubscription Response: #{charge_response.body[:charge_subscriber_response]}"
-
+        charge_response = client.call(:charge_subscriber, message: charge_message, :soap_action => "", :soap_header => {
+          'wasp:ServiceAuth' => {
+            "Username" => "#{@auth[:user]}", "Password" => "#{@auth[:pass]}"
+          }
+        })
+        puts "ChargeSubscription Response: #{charge_response.body[:charge_subscriber_response]}"
+      end
     rescue Savon::SOAPFault => error
       fault_code = error.to_hash[:fault][:faultcode]
       puts "ERROR: #{error}, CODE: #{fault_code}"
@@ -222,7 +226,7 @@ module DOI
       charge_message = {
         :msisdn => @msisdn,
         :serviceID => response[:return][:service_id],
-        :waspTid => wasp_tid
+        :waspTID => wasp_tid
       }
       charge_response = prod_client.call(:charge_subscriber, message: charge_message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
@@ -310,6 +314,16 @@ module DOI
     #   )
     # end
 
+    def cellc_config
+      if Rails.env.production?
+        load_prod_config
+      else
+        load_default_config
+      end
+    end
+
+    protected
+
     def qq_config
       qq_conf = TenbewDoiApi::Application.config.QQ_CONFIG[Rails.env]
       {
@@ -321,69 +335,37 @@ module DOI
     end
 
     # def cellc_config
-    #   if Rails.env.production?
-    #     load_prod_config
-    #   else
-    #     load_default_config
-    #   end
+    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+    #   {
+    #     :auth => {
+    #       :user => cellc_conf["user"],
+    #       :pass => cellc_conf["pass"]
+    #     },
+    #     :api => {
+    #       :wsdl => cellc_conf["wsdl"] || ENV["DOI_WSDL"],
+    #       :endpoint => cellc_conf["endpoint"] || ENV["DOI_ENDPOINT"],
+    #       :namespace => cellc_conf["namespace"] || ENV["DOI_NAMESPACE"],
+    #       :namespaces => cellc_namespaces
+    #     },
+    #     :web => {
+    #       :url => cellc_conf["url"] || ENV["DOI_URL"],
+    #       :callback_url => cellc_conf["callback_url"] || ENV["DOI_CALLBACK"],
+    #       :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}" || ENV["DOI_HOST"]
+    #     },
+    #     :charge_code => cellc_conf["charge_code"] || ENV["DOI_CHARGE_CODE"]
+    #   }
     # end
-    def cellc_config
+    def load_prod_config
       cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
       {
         :auth => {
-          :user => cellc_conf["user"],
-          :pass => cellc_conf["pass"]
+          :user => cellc_conf["user"] || ENV["DOI_USER"],
+          :pass => cellc_conf["pass"] || ENV["DOI_PASS"]
         },
         :api => {
           :wsdl => cellc_conf["wsdl"] || ENV["DOI_WSDL"],
           :endpoint => cellc_conf["endpoint"] || ENV["DOI_ENDPOINT"],
           :namespace => cellc_conf["namespace"] || ENV["DOI_NAMESPACE"],
-          :namespaces => cellc_namespaces
-        },
-        :web => {
-          :url => cellc_conf["url"] || ENV["DOI_URL"],
-          :callback_url => cellc_conf["callback_url"] || ENV["DOI_CALLBACK"],
-          :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}" || ENV["DOI_HOST"]
-        },
-        :charge_code => cellc_conf["charge_code"] || ENV["DOI_CHARGE_CODE"]
-      }
-    end
-
-    def operations
-      client.operations
-    end
-
-    def cellc_namespaces
-      if Rails.env.production?
-        {
-          "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema",
-          "xmlns:wsdl" => "http://schemas.xmlsoap.org/wsdl/",
-          "xmlns:tns" => "http://doi.net.truteq.com/",
-          "xmlns:soap" => "http://schemas.xmlsoap.org/wsdl/soap/",
-          "xmlns:ns2" => "http://schemas.xmlsoap.org/soap/http",
-          "xmlns:ns1" => "http://wasp.doi.soap.protocol.cellc.co.za"
-        }
-      else
-        {
-          "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-          "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-        }
-      end
-    end
-
-    protected
-
-    def load_prod_config
-      cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-      {
-        :auth => {
-          :user => cellc_conf["user"],
-          :pass => cellc_conf["pass"]
-        },
-        :api => {
-          :wsdl => cellc_conf["wsdl"],
-          :endpoint => cellc_conf["endpoint"],
-          :namespace => cellc_conf["namespace"],
           :namespaces => {
             "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema",
             "xmlns:wsdl" => "http://schemas.xmlsoap.org/wsdl/",
@@ -394,11 +376,11 @@ module DOI
           }
         },
         :web => {
-          :url => cellc_conf["url"],
-          :callback_url => cellc_conf["callback_url"],
-          :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
+          :url => cellc_conf["url"] || ENV["DOI_URL"],
+          :callback_url => cellc_conf["callback_url"] || ENV["DOI_CALLBACK"],
+          :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}" || ENV["DOI_HOST"]
         },
-        :charge_code => cellc_conf["charge_code"]
+        :charge_code => cellc_conf["charge_code"] || ENV["DOI_CHARGE_CODE"]
       }
     end
 
@@ -407,12 +389,12 @@ module DOI
       if cellc_conf["local_ssh_enabled"] == true
         {
           :auth => {
-            :user => "tenbew", :pass => "tenbew678"
+            :user => cellc_conf["user"], :pass => cellc_conf["pass"]
           },
           :api => {
             :wsdl => "http://localhost:8081/WaspInterface?wsdl",
             :endpoint => "http://localhost:8081/WaspInterface",
-            :namespace => cellc_conf["namespace"] || doi_namespace,
+            :namespace => cellc_conf["namespace"],
             :namespaces => {
               "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
               "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
@@ -448,49 +430,7 @@ module DOI
       end
     end
 
-    def doi_username
-      if Rails.env.production?
-        cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-        cellc_conf["user"]
-      else
-        "tenbew"
-      end
-    end
-
-    def doi_password
-      if Rails.env.production?
-        cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-        cellc_conf["pass"]
-      else
-        "tenbew678"
-      end
-    end
-
-    def doi_wsdl
-      if Rails.env.production?
-        "http://10.228.76.132:8081/WaspInterface?wsdl" || ENV["DOI_LIVE_WSDL"]
-      else
-        "http://41.156.64.242:8081/WaspInterface?wsdl" || ENV["DOI_TEST_WSDL"]
-      end
-    end
-
-    def doi_endpoint
-      if Rails.env.production?
-        "http://10.228.76.132:8081/WaspInterface" || ENV["DOI_LIVE_ENDPOINT"]
-      else
-        "http://41.156.64.242:8081/WaspInterface" || ENV["DOI_TEST_ENDPOINT"]
-      end
-    end
-
-    def doi_namespace
-      if Rails.env.production?
-        "http://doi.net.truteq.com/" || ENV["DOI_LIVE_NAMESPACE"]
-      else
-        "http://wasp.doi.soap.protocol.cellc.co.za" || ENV["DOI_TEST_NAMESPACE"]
-      end
-    end
-
-    def doi_namespaces
+    def cellc_namespaces
       if Rails.env.production?
         {
           "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema",
@@ -501,208 +441,11 @@ module DOI
           "xmlns:ns1" => "http://wasp.doi.soap.protocol.cellc.co.za"
         }
       else
-        {"xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/","xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"}
+        {
+          "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
+          "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
+        }
       end
     end
-
-    # def client_1
-    #   Savon.client(
-    #     wsdl: doi_wsdl,
-    #     endpoint: doi_endpoint,
-    #     namespace: doi_namespace,
-    #     namespaces: doi_namespaces,
-    #     wsse_auth: ["#{doi_username}", "#{doi_password}"],
-    #     namespace_identifier: :wasp,
-    #     env_namespace: :soapenv,
-    #     ssl_verify_mode: :none,
-    #     encoding: "UTF-8",
-    #     soap_version: 1,
-    #     log: true,
-    #     log_level: :debug,
-    #     pretty_print_xml: true,
-    #     strip_namespaces: false
-    #   )
-    # end
-
-    # def cellc_config
-    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-    #
-    #   if cellc_conf["local_ssh_enabled"] == true
-    #     {
-    #       :auth => {
-    #         :user => cellc_conf["user"],
-    #         :pass => cellc_conf["pass"]
-    #       },
-    #       :api => {
-    #         :wsdl => "http://localhost:8081/WaspInterface?wsdl",
-    #         :endpoint => "http://localhost:8081/WaspInterface",
-    #         :namespace => cellc_conf["namespace"] || doi_namespace,
-    #         :namespaces => cellc_namespaces
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       }
-    #     }
-    #   else
-    #     {
-    #       :auth => {
-    #         :user => cellc_conf["user"],
-    #         :pass => cellc_conf["pass"]
-    #       },
-    #       :api => {
-    #         :wsdl => cellc_conf["wsdl"],
-    #         :endpoint => cellc_conf["endpoint"],
-    #         :namespace => cellc_conf["namespace"],
-    #         :namespaces => cellc_namespaces
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       },
-    #       :charge_code => cellc_conf["charge_code"]
-    #     }
-    #   end
-    # end
-
-    # def load_default_config
-    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-    #   if cellc_conf["local_ssh_enabled"] == true
-    #     {
-    #       :auth => {
-    #         :user => "tenbew", :pass => "tenbew678"
-    #       },
-    #       :api => {
-    #         :wsdl => "http://localhost:8081/WaspInterface?wsdl",
-    #         :endpoint => "http://localhost:8081/WaspInterface",
-    #         :namespace => cellc_conf["namespace"] || doi_namespace,
-    #         :namespaces => {
-    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    #         }
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       }
-    #     }
-    #   else
-    #     {
-    #       :auth => {
-    #         :user => cellc_conf["user"] || doi_username,
-    #         :pass => cellc_conf["pass"] || doi_password
-    #       },
-    #       :api => {
-    #         :wsdl => cellc_conf["wsdl"] || doi_wsdl,
-    #         :endpoint => cellc_conf["endpoint"] || doi_endpoint,
-    #         :namespace => cellc_conf["namespace"] || doi_namespace,
-    #         :namespaces => {
-    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    #         }
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       },
-    #       :charge_codes => {
-    #         "DOI001" => "R1",
-    #         "DOI002" => "R2",
-    #         "DOI003" => "R3",
-    #         "DOI004" => "R4",
-    #         "DOI005" => "R5"
-    #       }
-    #     }
-    #   end
-    # end
-
-    # def cellc_config_current
-    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-    #   {
-    #     :auth => {
-    #       :user => cellc_conf["user"] || doi_username,
-    #       :pass => cellc_conf["pass"] || doi_password
-    #     },
-    #     :api => {
-    #       :wsdl => cellc_conf["wsdl"] || doi_wsdl,
-    #       :endpoint => cellc_conf["endpoint"] || doi_endpoint,
-    #       :namespace => cellc_conf["namespace"] || doi_namespace,
-    #       :namespaces => {
-    #         "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-    #         "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    #       }
-    #     },
-    #     :web => {
-    #       :url => cellc_conf["url"],
-    #       :callback_url => cellc_conf["callback_url"],
-    #       :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #     },
-    #     :charge_codes => {
-    #       "DOI001" => "R1",
-    #       "DOI002" => "R2",
-    #       "DOI003" => "R3",
-    #       "DOI004" => "R4",
-    #       "DOI005" => "R5"
-    #     }
-    #   }
-    # end
-
-    # def cellc_config
-    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-    #   if cellc_conf["local_ssh_enabled"] == true
-    #     {
-    #       :auth => {
-    #         :user => "tenbew", :pass => "tenbew678"
-    #       },
-    #       :api => {
-    #         :wsdl => "http://localhost:8081/WaspInterface?wsdl",
-    #         :endpoint => "http://localhost:8081/WaspInterface",
-    #         :namespace => cellc_conf["namespace"] || doi_namespace,
-    #         :namespaces => {
-    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    #         }
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       }
-    #     }
-    #   else
-    #     {
-    #       :auth => {
-    #         :user => cellc_conf["user"] || doi_username,
-    #         :pass => cellc_conf["pass"] || doi_password
-    #       },
-    #       :api => {
-    #         :wsdl => cellc_conf["wsdl"] || doi_wsdl,
-    #         :endpoint => cellc_conf["endpoint"] || doi_endpoint,
-    #         :namespace => cellc_conf["namespace"] || doi_namespace,
-    #         :namespaces => {
-    #           "xmlns:soapenv" => "http://schemas.xmlsoap.org/soap/envelope/",
-    #           "xmlns:wasp" => "http://wasp.doi.soap.protocol.cellc.co.za"
-    #         }
-    #       },
-    #       :web => {
-    #         :url => cellc_conf["url"],
-    #         :callback_url => cellc_conf["callback_url"],
-    #         :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}"
-    #       },
-    #       :charge_codes => {
-    #         "DOI001" => "R1",
-    #         "DOI002" => "R2",
-    #         "DOI003" => "R3",
-    #         "DOI004" => "R4",
-    #         "DOI005" => "R5"
-    #       }
-    #     }
-    #   end
-    # end
-
   end
 end
