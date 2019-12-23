@@ -195,6 +195,25 @@ module DOI
           }
         })
         puts "ChargeSubscription Response: #{charge_response.body[:charge_subscriber_response]}"
+        charge_result = charge_response.body[:charge_subscriber_response][:return]
+
+        if charge_result == "0" || charge_result == 0
+          cancel_response = client.call(:cancel_subscription, message: cancel_message(service_id), :soap_action => "", :soap_header => {
+            'wasp:ServiceAuth' => {
+              "Username" => "#{@auth[:user]}",
+              "Password" => "#{@auth[:pass]}"
+            }
+          })
+          puts "CancelSubscription Response: #{cancel_response.body[:cancel_subscription_response]}"
+        else
+          notify_response = client.call(:renotify_subscriber, message: notify_message(service_id), :soap_action => "", :soap_header => {
+            'wasp:ServiceAuth' => {
+              "Username" => "#{@auth[:user]}",
+              "Password" => "#{@auth[:pass]}"
+            }
+          })
+          puts "Notify Subscriber Response: #{notify_response.body[:renotify_subscriber_response]}"
+        end
       end
     rescue Savon::SOAPFault => error
       fault_code = error.to_hash[:fault][:faultcode]
@@ -314,13 +333,13 @@ module DOI
     #   )
     # end
 
-    def cellc_config
-      if Rails.env.production?
-        load_prod_config
-      else
-        load_default_config
-      end
-    end
+    # def cellc_config
+    #   if Rails.env.production?
+    #     load_prod_config
+    #   else
+    #     load_default_config
+    #   end
+    # end
 
     protected
 
@@ -334,27 +353,28 @@ module DOI
       }
     end
 
-    # def cellc_config
-    #   cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
-    #   {
-    #     :auth => {
-    #       :user => cellc_conf["user"],
-    #       :pass => cellc_conf["pass"]
-    #     },
-    #     :api => {
-    #       :wsdl => cellc_conf["wsdl"] || ENV["DOI_WSDL"],
-    #       :endpoint => cellc_conf["endpoint"] || ENV["DOI_ENDPOINT"],
-    #       :namespace => cellc_conf["namespace"] || ENV["DOI_NAMESPACE"],
-    #       :namespaces => cellc_namespaces
-    #     },
-    #     :web => {
-    #       :url => cellc_conf["url"] || ENV["DOI_URL"],
-    #       :callback_url => cellc_conf["callback_url"] || ENV["DOI_CALLBACK"],
-    #       :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}" || ENV["DOI_HOST"]
-    #     },
-    #     :charge_code => cellc_conf["charge_code"] || ENV["DOI_CHARGE_CODE"]
-    #   }
-    # end
+    def cellc_config
+      cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
+      {
+        :auth => {
+          :user => cellc_conf["user"],
+          :pass => cellc_conf["pass"]
+        },
+        :api => {
+          :wsdl => cellc_conf["wsdl"] || ENV["DOI_WSDL"],
+          :endpoint => cellc_conf["endpoint"] || ENV["DOI_ENDPOINT"],
+          :namespace => cellc_conf["namespace"] || ENV["DOI_NAMESPACE"],
+          :namespaces => cellc_namespaces
+        },
+        :web => {
+          :url => cellc_conf["url"] || ENV["DOI_URL"],
+          :callback_url => cellc_conf["callback_url"] || ENV["DOI_CALLBACK"],
+          :host => "#{cellc_conf["ip"]}:#{cellc_conf["port"]}" || ENV["DOI_HOST"]
+        },
+        :charge_code => cellc_conf["charge_code"] || ENV["DOI_CHARGE_CODE"]
+      }
+    end
+
     def load_prod_config
       cellc_conf = TenbewDoiApi::Application.config.CELLC_CONFIG[Rails.env]
       {
