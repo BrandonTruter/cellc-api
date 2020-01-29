@@ -24,8 +24,9 @@ module DOI
       raise StandardError, fault_code
     end
 
-    def charge
-      response = client.call(:charge_subscriber, message: charge_message, :soap_action => "", :soap_header => {
+    def charge(service_id)
+      message = charge_sub_message(service_id)
+      response = client.call(:charge_subscriber, message: message, :soap_action => "", :soap_header => {
         'wasp:ServiceAuth' => {
           "Username" => "#{@auth[:user]}",
           "Password" => "#{@auth[:pass]}"
@@ -132,6 +133,14 @@ module DOI
         "bearerType" => bearer_type,
         "waspReference" => wasp_reference,
         "waspTID" => wasp_tid
+      }
+    end
+
+    def charge_sub_message(service_id)
+      {
+        :msisdn => @msisdn,
+        :waspTID => @qq[:waspTID],
+        :serviceID => service_id || @qq[:serviceID]
       }
     end
 

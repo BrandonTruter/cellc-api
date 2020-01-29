@@ -1,7 +1,7 @@
 module Api::V1
   class SubscriptionsController < ApiController
     before_action :set_subscription, only: [:show, :update, :destroy]
-    before_action :set_subscriber, only: [:charge, :cancel_sub, :notify_sub]
+    before_action :set_subscriber, only: [:charge, :charge_sub, :cancel_sub, :notify_sub]
     before_action :set_params, only: [:add_sub, :charge_sub, :charge, :cancel_sub, :notify_sub]
 
     # POST /api/v1/add_sub
@@ -15,8 +15,10 @@ module Api::V1
 
     # POST /api/v1/charge_sub
     def charge_sub
-      logger.info "Api::V1::SubscriptionsController.charge_sub : #{@msisdn}"
-      response = DOI::SubscriptionManager.new(@msisdn).charge
+      logger.info "Api::V1::SubscriptionsController.charge_sub::"
+      logger.info "MSISDN: #{@msisdn}, ServiceID: #{@service_id}"
+      # response = DOI::SubscriptionManager.new(@msisdn).charge
+      response = @subscriber.charge(@service_id)
       logger.info "RESPONSE: #{response}"
 
       render :json => response.to_json
@@ -114,7 +116,8 @@ module Api::V1
     def set_subscriber
       msisdn = @msisdn.nil? ? params[:msisdn] : @msisdn
       @subscriber = DOI::SubscriptionManager.new(msisdn)
-      @service_id = params[:service_id] unless params[:service_id].nil?
+      @service_id = params[:service_id].nil? ? "" : params[:service_id]
+      # @service_id = params[:service_id] unless params[:service_id].nil?
     end
   end
 end
