@@ -279,6 +279,16 @@ module DOI
       end
     end
 
+    # def cellc_config
+    #   if Rails.env.production?
+    #     load_prod_config
+    #   else
+    #     load_default_config
+    #   end
+    # end
+
+    protected
+
     def dev_client
       Savon.client(
         wsdl: @api[:wsdl],
@@ -317,40 +327,6 @@ module DOI
         raise_errors: true, pretty_print_xml: true, strip_namespaces: true
       )
     end
-
-    # def client
-    #   Savon.client(
-    #     wsdl: @api[:wsdl],
-    #     endpoint: @api[:endpoint],
-    #     namespace: @api[:namespace],
-    #     namespaces: @api[:namespaces],
-    #     wsse_auth: [@auth[:user], @auth[:pass]],
-    #     element_form_default: :unqualified,
-    #     namespace_identifier: :wasp,
-    #     env_namespace: :soapenv,
-    #     ssl_verify_mode: :none,
-    #     logger: Rails.logger,
-    #     log_level: :debug,
-    #     log: true,
-    #     encoding: "UTF-8",
-    #     soap_version: 1,
-    #     open_timeout: 900,
-    #     read_timeout: 900,
-    #     raise_errors: false,
-    #     pretty_print_xml: true,
-    #     strip_namespaces: true
-    #   )
-    # end
-
-    # def cellc_config
-    #   if Rails.env.production?
-    #     load_prod_config
-    #   else
-    #     load_default_config
-    #   end
-    # end
-
-    protected
 
     def qq_config
       qq_conf = TenbewDoiApi::Application.config.QQ_CONFIG[Rails.env]

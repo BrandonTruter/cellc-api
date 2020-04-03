@@ -17,7 +17,6 @@ module Api::V1
     def charge_sub
       logger.info "Api::V1::SubscriptionsController.charge_sub::"
       logger.info "MSISDN: #{@msisdn}, ServiceID: #{@service_id}"
-      # response = DOI::SubscriptionManager.new(@msisdn).charge
       response = @subscriber.charge(@service_id)
       logger.info "RESPONSE: #{response}"
 
@@ -40,7 +39,6 @@ module Api::V1
     # POST /api/v1/notify_sub
     def notify_sub
       logger.info "Api::V1::SubscriptionsController.notify_sub : #{@msisdn}"
-      # response = DOI::SubscriptionManager.new(@msisdn).notify
       response = @subscriber.notify(@service_id)
       logger.info "RESPONSE: #{response}"
 
@@ -50,11 +48,9 @@ module Api::V1
     # POST /api/v1/charge
     def charge
       logger.info "Api::V1::SubscriptionsController.charge"
-      # subscriber = DOI::SubscriptionManager.new(msisdn)
       sub = @subscriber.nil? ? DOI::SubscriptionManager.new(@msisdn) : @subscriber
       service_id = @service_id.nil? ? params[:service_id] : @service_id
       logger.info "msisdn: #{@msisdn}, service_id: #{service_id}"
-      # response = subscriber.charge_subscription(service_id)
       response = sub.charge_subscription(service_id)
       logger.info "RESPONSE: #{response}"
 
@@ -116,8 +112,8 @@ module Api::V1
     def set_subscriber
       msisdn = @msisdn.nil? ? params[:msisdn] : @msisdn
       @subscriber = DOI::SubscriptionManager.new(msisdn)
-      @service_id = params[:service_id].nil? ? "" : params[:service_id]
-      # @service_id = params[:service_id] unless params[:service_id].nil?
+      @service_id = params[:service_id] unless params[:service_id].nil?
+      # @service_id = params[:service_id].nil? ? "" : params[:service_id]
     end
   end
 end
